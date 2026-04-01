@@ -1,0 +1,44 @@
+{
+  "name": "skill-framework",
+  "version": "1.0.0",
+  "description": "Agent SKILL framework - skill package management, loading, and tool binding",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "lint": "eslint src/",
+    "prepublishOnly": "npm run build && npm test -- --forceExit"
+  },
+  "keywords": [
+    "agent",
+    "skill",
+    "framework",
+    "llm",
+    "function-calling",
+    "tool-binding"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/<owner>/skill-framework.git"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.5",
+    "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.11.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.3.0"
+  },
+  "license": "MIT"
+}

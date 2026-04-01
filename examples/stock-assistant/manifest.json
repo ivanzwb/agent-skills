@@ -1,0 +1,48 @@
+[
+  {
+    "name": "search",
+    "description": "按关键词检索证券简称或代码",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "keyword": {
+          "type": "string",
+          "description": "搜索关键词，如股票名称或代码"
+        }
+      },
+      "required": ["keyword"]
+    }
+  },
+  {
+    "name": "get_summary",
+    "description": "获取个股基本面摘要信息",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "股票代码，如 600519"
+        }
+      },
+      "required": ["code"]
+    }
+  },
+  {
+    "name": "get_quotes",
+    "description": "获取个股最近交易行情",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "股票代码"
+        },
+        "days": {
+          "type": "string",
+          "description": "查询天数，默认 5"
+        }
+      },
+      "required": ["code"]
+    }
+  }
+]
