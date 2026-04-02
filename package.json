@@ -1,7 +1,7 @@
 {
   "name": "agent-skills",
   "version": "1.0.0",
-  "description": "Agent SKILL framework - skill package management, loading, and tool binding",
+  "description": "A TypeScript framework for managing AI agent skill packages — install, load, and bind tools for LLM function calling",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -21,12 +21,42 @@
   },
   "keywords": [
     "agent",
+    "agent-skills",
+    "ai-agent",
+    "ai-agent-framework",
     "skill",
-    "framework",
+    "skill-framework",
+    "skill-package-manager",
     "llm",
+    "llm-tools",
     "function-calling",
-    "tool-binding"
+    "tool-binding",
+    "tool-use",
+    "tool-calling",
+    "ai",
+    "chatgpt",
+    "copilot",
+    "copilot-extensions",
+    "openai",
+    "claude",
+    "mcp",
+    "model-context-protocol",
+    "plugin",
+    "plugin-system",
+    "typescript",
+    "agent-framework",
+    "langchain",
+    "autogpt",
+    "gpt-agent",
+    "ai-tools",
+    "agent-toolkit",
+    "skill-management",
+    "progressive-loading"
   ],
+  "homepage": "https://github.com/ivanzwb/agent-skills#readme",
+  "bugs": {
+    "url": "https://github.com/ivanzwb/agent-skills/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ivanzwb/agent-skills.git"

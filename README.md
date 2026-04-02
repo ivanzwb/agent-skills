@@ -1,11 +1,35 @@
 # agent-skills
 
-[![CI](https://github.com/<owner>/agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/<owner>/agent-skills/actions/workflows/ci.yml)
+[![CI](https://github.com/ivanzwb/agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/ivanzwb/agent-skills/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/agent-skills.svg)](https://www.npmjs.com/package/agent-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green.svg)](https://nodejs.org/)
 
 [中文文档](README.zh-CN.md)
 
+> A TypeScript framework for managing AI agent skill packages — install, load, and bind tools for LLM function calling.
+
 Agent SKILL framework — a skill package management, three-level progressive loading, and tool binding engine aligned with the [Agent Skills Specification](https://agentskills.io/specification).
+
+## Why agent-skills?
+
+Building AI agents that use tools (function calling) often means writing glue code for every new capability. **agent-skills** solves this by providing a standardised skill package format and a runtime engine that handles the full lifecycle:
+
+| Pain Point | How agent-skills Helps |
+|---|---|
+| Manual tool registration for each LLM | Declare tools once in `manifest.json`, bind to any model |
+| Monolithic prompt files grow unmanageable | Three-level progressive loading (L0 → L1 → L2) keeps context minimal |
+| No standard for packaging agent capabilities | Follows the open [Agent Skills Specification](https://agentskills.io/specification) |
+| Dependency hell across languages | Built-in npm & pip installers; extensible to Cargo, Go modules, etc. |
+| Security risks with zip / path inputs | Zip-slip detection, path traversal prevention, name-directory validation |
+
+### Use Cases
+
+- **Copilot / ChatGPT plugin authors**: Package tools as skill packages and distribute them via npm or zip.
+- **AI agent developers**: Dynamically install and bind new capabilities at runtime without redeployment.
+- **Enterprise teams**: Maintain a curated skill registry with security-hardened installation.
+- **LLM application builders**: Expose function-call tools to OpenAI, Claude, Gemini, or any model that supports tool use.
 
 ## Features
 
@@ -369,3 +393,20 @@ npm test
 ## License
 
 [MIT](LICENSE)
+
+## Related Projects & Alternatives
+
+If you are exploring the AI agent tooling ecosystem, you might also be interested in:
+
+- [LangChain](https://github.com/langchain-ai/langchain) — LLM application framework with tool/agent abstractions
+- [Semantic Kernel](https://github.com/microsoft/semantic-kernel) — Microsoft's SDK for integrating LLMs with plugins
+- [AutoGPT](https://github.com/Significant-Gravitas/AutoGPT) — Autonomous AI agent experiment
+- [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol) — Open protocol for connecting AI models to external tools
+
+**agent-skills** is focused specifically on **skill package management and tool binding** — it complements these frameworks rather than replacing them.
+
+## GitHub Topics
+
+When starring or forking this repo, consider adding these topics to your fork for better discoverability:
+
+`ai-agent` · `agent-framework` · `llm-tools` · `function-calling` · `tool-use` · `skill-framework` · `typescript` · `ai` · `chatgpt` · `copilot` · `openai` · `claude` · `mcp` · `plugin-system` · `agent-skills`

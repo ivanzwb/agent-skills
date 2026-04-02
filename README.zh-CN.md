@@ -1,11 +1,35 @@
 # agent-skills
 
-[![CI](https://github.com/<owner>/agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/<owner>/agent-skills/actions/workflows/ci.yml)
+[![CI](https://github.com/ivanzwb/agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/ivanzwb/agent-skills/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/agent-skills.svg)](https://www.npmjs.com/package/agent-skills)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green.svg)](https://nodejs.org/)
 
 [English](README.md)
 
+> 一个用于管理 AI Agent 技能包的 TypeScript 框架 —— 安装、加载、绑定工具，支持大模型 function calling。
+
 Agent SKILL 框架 —— 与 [Agent Skills Specification](https://agentskills.io/specification) 对齐的技能包管理、三级加载与工具绑定引擎。
+
+## 为什么选择 agent-skills？
+
+构建使用工具（function calling）的 AI Agent 通常需要为每个新功能编写胶水代码。**agent-skills** 提供了标准化的技能包格式和运行时引擎，覆盖完整生命周期：
+
+| 痛点 | agent-skills 如何解决 |
+|---|---|
+| 每个 LLM 都要手动注册工具 | 在 `manifest.json` 中声明一次，绑定到任意模型 |
+| 单一 prompt 文件越来越臃肿 | 三级渐进加载（L0 → L1 → L2）保持上下文最小化 |
+| Agent 能力缺乏标准打包方式 | 遵循开放的 [Agent Skills Specification](https://agentskills.io/specification) |
+| 跨语言依赖管理困难 | 内置 npm / pip 安装器，可扩展至 Cargo、Go modules 等 |
+| zip / 路径输入存在安全风险 | zip-slip 检测、路径遍历拦截、名称-目录一致性校验 |
+
+### 适用场景
+
+- **Copilot / ChatGPT 插件作者**：将工具打包为技能包，通过 npm 或 zip 分发。
+- **AI Agent 开发者**：运行时动态安装和绑定新能力，无需重新部署。
+- **企业团队**：维护经过安全加固的技能注册表。
+- **大模型应用开发者**：向 OpenAI、Claude、Gemini 或任何支持 tool use 的模型暴露 function-call 工具。
 
 ## 功能特性
 
@@ -369,3 +393,14 @@ npm test
 ## License
 
 [MIT](LICENSE)
+
+## 相关项目
+
+如果你在探索 AI Agent 工具生态，以下项目可能也有帮助：
+
+- [LangChain](https://github.com/langchain-ai/langchain) — LLM 应用框架，提供工具 / Agent 抽象
+- [Semantic Kernel](https://github.com/microsoft/semantic-kernel) — 微软的 LLM 插件 SDK
+- [AutoGPT](https://github.com/Significant-Gravitas/AutoGPT) — 自主 AI Agent 实验项目
+- [Model Context Protocol (MCP)](https://github.com/modelcontextprotocol) — 连接 AI 模型与外部工具的开放协议
+
+**agent-skills** 专注于 **技能包管理与工具绑定** —— 与这些框架互补，而非替代。
