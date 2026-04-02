@@ -24,7 +24,8 @@ function assertPathWithinRoot(root: string, candidate: string): string {
 }
 
 function sanitizeArchiveEntry(targetDir: string, entryName: string): string {
-  if (path.isAbsolute(entryName)) {
+  // Check for both POSIX and Windows absolute paths regardless of current OS
+  if (path.isAbsolute(entryName) || path.win32.isAbsolute(entryName) || path.posix.isAbsolute(entryName)) {
     throw new SkillSecurityError(`Archive entry has absolute path: "${entryName}"`);
   }
   return assertPathWithinRoot(targetDir, entryName);
