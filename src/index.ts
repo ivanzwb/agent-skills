@@ -202,6 +202,21 @@ export class SkillFramework {
     return this._tools.getAllSkillToolDeclarations();
   }
 
+  // ─── Tool Execution ──────────────────────────────────────────────
+
+  /** Execute a skill tool script. */
+  async runScript(params: {
+    name: string;
+    toolName: string;
+    args?: string;
+  }): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    return this._tools.runScript({
+      name: params.name,
+      toolName: params.toolName,
+      args: params.args,
+    });
+  }
+
 }
 
 export * from './types';

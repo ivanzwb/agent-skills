@@ -245,6 +245,10 @@ export class SkillInstaller {
     const dirName = path.basename(sourceDir);
     const targetDir = path.join(this.config.skillsDir, dirName);
 
+    if (sourceDir === targetDir) {
+      return targetDir;
+    }
+
     if (fs.existsSync(targetDir)) {
       throw new SkillFrameworkError(
         `Skill directory already exists: ${dirName}. Uninstall first.`,

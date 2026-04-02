@@ -1,0 +1,142 @@
+[
+  {
+    "name": "stock-analysis",
+    "status": "installed",
+    "rootPath": "C:\\Projects\\skill-framework\\skills\\stock-analysis",
+    "frontmatter": {
+      "name": "stock-analysis",
+      "description": "A股股票数据分析工具，提供股票搜索、K线数据、基本面数据、板块信息、新闻等",
+      "license": "MIT"
+    },
+    "tools": [
+      {
+        "name": "search",
+        "description": "根据关键词搜索A股股票代码，返回股票代码、名称、市场信息",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "keyword": {
+              "type": "string",
+              "description": "搜索关键词，可以是股票名称或代码"
+            }
+          },
+          "required": [
+            "keyword"
+          ]
+        }
+      },
+      {
+        "name": "kline",
+        "description": "获取股票K线数据和技术指标（MA/MACD/RSI/KDJ等）",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "股票代码（6位数字）"
+            },
+            "period": {
+              "type": "string",
+              "enum": [
+                "daily",
+                "weekly",
+                "monthly"
+              ],
+              "default": "daily",
+              "description": "K线周期"
+            },
+            "limit": {
+              "type": "integer",
+              "default": 60,
+              "description": "返回数据条数"
+            }
+          },
+          "required": [
+            "code"
+          ]
+        }
+      },
+      {
+        "name": "fundamental",
+        "description": "获取股票基本面数据，包括PE/PB/ROE/市值/财务指标等",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "股票代码（6位数字）"
+            }
+          },
+          "required": [
+            "code"
+          ]
+        }
+      },
+      {
+        "name": "sectors",
+        "description": "获取A股所有行业板块列表，包括板块代码、涨跌幅、龙头股等",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "concepts",
+        "description": "获取A股所有概念板块列表，用于追踪热点题材",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "default": "concepts",
+              "description": "板块类型"
+            }
+          }
+        }
+      },
+      {
+        "name": "sector-stocks",
+        "description": "获取指定板块内的成分股列表",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "sectorCode": {
+              "type": "string",
+              "description": "板块代码"
+            },
+            "limit": {
+              "type": "integer",
+              "default": 20,
+              "description": "返回股票数量"
+            }
+          },
+          "required": [
+            "sectorCode"
+          ]
+        }
+      },
+      {
+        "name": "news",
+        "description": "获取指定股票的最新新闻和公告",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "股票代码（6位数字）"
+            },
+            "limit": {
+              "type": "integer",
+              "default": 10,
+              "description": "返回新闻数量"
+            }
+          },
+          "required": [
+            "code"
+          ]
+        }
+      }
+    ],
+    "installedAt": "2026-04-02T00:15:41.889Z"
+  }
+]

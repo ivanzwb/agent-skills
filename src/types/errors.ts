@@ -30,3 +30,17 @@ export class SkillSecurityError extends SkillFrameworkError {
     this.name = 'SkillSecurityError';
   }
 }
+
+export class ToolNotFoundError extends SkillFrameworkError {
+  constructor(toolName: string, skillName: string) {
+    super(`Tool "${toolName}" not found in skill "${skillName}"`, 'TOOL_NOT_FOUND');
+    this.name = 'ToolNotFoundError';
+  }
+}
+
+export class ScriptExecutionError extends SkillFrameworkError {
+  constructor(message: string, public readonly stdout?: string, public readonly stderr?: string) {
+    super(message, 'SCRIPT_EXECUTION_ERROR');
+    this.name = 'ScriptExecutionError';
+  }
+}

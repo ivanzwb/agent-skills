@@ -14,6 +14,8 @@ Agent SKILL framework — a skill package management, three-level progressive lo
 - **Pre-install preview** — Stage to a temp directory, inspect before deciding to install or cancel
 - **Automatic dependency installation** — Built-in npm / pip, extensible to any language via `IDependencyInstaller`
 - **manifest.json tool declarations** — Parsed and exposed as function-call format tool definitions
+- **Script execution** — Execute skill tools via `runScript()` with JSON Schema validation
+- **CLI support** — `skill` command for skill management and tool execution
 - **Security hardening** — Zip-slip detection, path traversal prevention, name-directory consistency validation
 - **JSON persistent registry** — Tracks installed skill status
 
@@ -67,6 +69,58 @@ const tools = sf.listTools('my-skill');
 await sf.uninstall('my-skill');
 ```
 
+### CLI Usage
+
+After installing the package globally (`npm link` or `npm install -g skill-framework`), you can use the `skill` command:
+
+```bash
+# List installed skills
+skill list
+
+# Install a skill
+skill install ./my-skill
+skill install ./my-skill.zip
+
+# Uninstall a skill
+skill uninstall my-skill
+
+# Run a skill tool (args as JSON string)
+skill run my-skill search '{"keyword":"茅台"}'
+skill run my-skill kline '{"code":"600519","period":"daily","limit":60}'
+
+# Show help
+skill help
+```
+
+**Environment variables:**
+- `SKILL_HOME` — Override the skills storage directory (default: `./skills` in package root)
+
+```bash
+SKILL_HOME=~/.skills skill list
+```
+
+### Script Execution (runScript)
+
+Execute skill tool scripts programmatically with JSON Schema validation:
+
+```ts
+// Execute a tool with validated arguments
+const result = await sf.runScript({
+  name: 'my-skill',
+  toolName: 'search',
+  args: '{"keyword":"茅台"}'  // JSON string from LLM
+});
+
+console.log(result.stdout);   // Script output
+console.log(result.stderr);   // Error output
+console.log(result.exitCode); // Exit code
+```
+
+The `args` parameter accepts a JSON string that will be validated against the tool's `manifest.json` parameters schema:
+- Required fields are checked
+- Types are validated (string, number, boolean, etc.)
+- Enum values are enforced
+
 ### Preview Mode
 
 ```ts
@@ -117,7 +171,7 @@ const allTools = sf.getAllSkillToolDeclarations();
 
 ## Framework Tool Definitions (LLM Function Calling)
 
-The framework exposes 6 tools via `getFrameworkToolDeclarations()` that can be injected directly into an LLM's tools/functions list:
+The framework exposes 7 tools via `getFrameworkToolDeclarations()` that can be injected directly into an LLM's tools/functions list:
 
 ### `skill_list`
 
@@ -222,6 +276,26 @@ List all tools declared by a skill (name, description, parameters schema).
 }
 ```
 
+### `skill_run_script`
+
+Execute a skill tool script. Validates args against the tool's JSON Schema and runs the script with provided parameters.
+
+```json
+{
+  "name": "skill_run_script",
+  "description": "Execute a skill tool script. Returns stdout/stderr as JSON strings.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "name": { "type": "string", "description": "Skill name" },
+      "toolName": { "type": "string", "description": "Tool name declared in manifest.json" },
+      "args": { "type": "string", "description": "Tool arguments as json string" }
+    },
+    "required": ["name", "toolName"]
+  }
+}
+```
+
 ### Business Tool Namespacing
 
 Business tools declared in a skill's `manifest.json` are automatically prefixed with `skill.{skillName}.{toolName}` to avoid cross-skill name collisions. Call `getAllSkillToolDeclarations()` to retrieve all business tool definitions at once.
@@ -242,6 +316,7 @@ Business tools declared in a skill's `manifest.json` are automatically prefixed 
 | `installPreviewed(tempDir)` | Install a previously previewed skill |
 | `cancelPreview(tempDir)` | Cancel preview and clean up |
 | `listTools(name)` | List tools declared by a skill |
+| `runScript(params)` | Execute a skill tool script with JSON Schema validation |
 | `getFrameworkToolDeclarations()` | Get framework-level tool declarations |
 | `getSkillToolDeclarations(name)` | Get namespaced tool declarations for a skill |
 | `getAllSkillToolDeclarations()` | Get all skill tool declarations |

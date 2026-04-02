@@ -152,8 +152,38 @@ Agent Skills 规范不定义进程如何启动；本框架在包内约定 **`man
 | `skill_load_main` | L0→L1：返回主 `SKILL.md` 正文 |
 | `skill_load_reference` | L1→L2：按相对路径或 reference id 加载 |
 | `skill_list_tools` | 某技能的工具名、description、parameters |
+| `skill_run_script` | 执行技能工具脚本，带 JSON Schema 验证 |
 
 业务工具为 `skill.{name}.{tool}`，与上表区分，便于权限模型分离。
+
+---
+
+## 9.1 脚本执行
+
+技能工具脚本位于 `scripts/` 目录下，文件名需与 `manifest.json` 中的工具名一致（如工具名为 `search` 则脚本为 `scripts/search.js`）。
+
+执行流程：
+1. 接收 LLM 传来的 `args`（JSON 字符串）
+2. 根据 `manifest.json` 中的 `parameters` 进行 JSON Schema 验证（必填字段、类型、枚举值）
+3. 将 `args` 作为命令行参数传递给脚本：`node scripts/{toolName}.js '{...}'`
+4. 脚本通过 `process.argv[2]` 获取参数并执行
+
+### CLI 命令行
+
+框架提供 `skill` 命令用于技能管理：
+
+```bash
+skill list                     # 列出已安装技能
+skill install <source>         # 安装技能（目录或 zip）
+skill uninstall <name>         # 卸载技能
+skill run <skill> <tool> [args] # 运行技能工具
+skill help                     # 显示帮助
+```
+
+可通过 `SKILL_HOME` 环境变量自定义技能存储目录：
+```bash
+SKILL_HOME=~/.skills skill list
+```
 
 ---
 

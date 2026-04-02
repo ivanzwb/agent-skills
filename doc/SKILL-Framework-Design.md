@@ -152,8 +152,38 @@ Provided by the host as structured tools (JSON parameters); reference paths are 
 | `skill_load_main` | L0→L1: return main `SKILL.md` body |
 | `skill_load_reference` | L1→L2: load by relative path or reference id |
 | `skill_list_tools` | A skill's tool names, descriptions, and parameters |
+| `skill_run_script` | Execute a skill tool script with JSON Schema validation |
 
 Business tools use `skill.{name}.{tool}`, distinguished from the above for permission model separation.
+
+---
+
+## 9.1 Script Execution
+
+Skill tool scripts are located in the `scripts/` directory. The script filename must match the tool name in `manifest.json` (e.g., tool named `search` → script `scripts/search.js`).
+
+Execution flow:
+1. Receive `args` (JSON string) from LLM
+2. Validate against `manifest.json` `parameters` JSON Schema (required fields, types, enum values)
+3. Pass `args` as command line argument to script: `node scripts/{toolName}.js '{...}'`
+4. Script receives params via `process.argv[2]`
+
+### CLI Command
+
+The framework provides a `skill` command for skill management:
+
+```bash
+skill list                     # List installed skills
+skill install <source>         # Install a skill (directory or zip)
+skill uninstall <name>         # Uninstall a skill
+skill run <skill> <tool> [args] # Run a skill tool
+skill help                     # Show help
+```
+
+Customize the skills storage directory via `SKILL_HOME` environment variable:
+```bash
+SKILL_HOME=~/.skills skill list
+```
 
 ---
 

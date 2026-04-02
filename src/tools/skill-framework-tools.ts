@@ -1,13 +1,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn } from 'child_process';
 import {
   SkillL0,
   SkillL1,
   SkillReference,
   SkillListResult,
   ToolDeclaration,
+  ToolParameterProperty,
   SkillNotFoundError,
   SkillSecurityError,
+  ToolNotFoundError,
+  ScriptExecutionError,
 } from '../types';
 import { SkillRegistry } from '../registry/skill-registry';
 import { SkillInstaller } from '../installer/skill-installer';
@@ -186,6 +190,20 @@ export class SkillFrameworkTools {
           required: ['name'],
         },
       },
+      // {name: 'skill_run_script',  arguments: {name: skill, toolName: search, args: '--key=abc'}
+      {
+        name: 'skill_run_script',
+        description: 'Execute a skill tool script. Returns stdout/stderr as JSON strings.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Skill name' },
+            toolName: { type: 'string', description: 'Tool name declared in manifest.json' },
+            args: { type: 'string', description: 'Tool arguments as json string' },
+          },
+          required: ['name', 'toolName'],
+        },
+      },
     ];
   }
 
@@ -211,5 +229,110 @@ export class SkillFrameworkTools {
       }
     }
     return declarations;
+  }
+
+  /**
+   * Execute a skill tool script.
+   * Parses CLI args from ToolDeclaration.parameters and validates against JSON Schema.
+   */
+  async runScript(params: {
+    name: string;
+    toolName: string;
+    args?: string;
+  }): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+    const entry = this.registry.get(params.name);
+    const tool = entry.tools.find((t) => t.name === params.toolName);
+    if (!tool) {
+      throw new ToolNotFoundError(params.toolName, params.name);
+    }
+
+    let providedArgs: Record<string, unknown> = {};
+    try {
+      providedArgs = JSON.parse(params.args || '{}');
+    } catch {
+      throw new ScriptExecutionError('Invalid JSON in args parameter');
+    }
+
+    const validationResult = this.validateArgs(tool, providedArgs);
+    if (!validationResult.valid) {
+      throw new ScriptExecutionError(`Parameter validation failed: ${validationResult.errors.join(', ')}`);
+    }
+
+    const fullScriptPath = path.join(entry.rootPath, 'scripts', `${params.toolName}.js`);
+    
+    if (!fs.existsSync(fullScriptPath)) {
+      throw new ScriptExecutionError(`Script not found: ${fullScriptPath}`);
+    }
+
+    const child = spawn('node', [fullScriptPath, params.args || '{}'], {
+      cwd: entry.rootPath,
+      timeout: 30000,
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout?.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    child.stderr?.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    return new Promise((resolve) => {
+      child.on('close', (code) => {
+        resolve({ stdout, stderr, exitCode: code || 0 });
+      });
+      child.on('error', (error) => {
+        resolve({ stdout, stderr, exitCode: 1 });
+      });
+    });
+  }
+
+  private validateArgs(
+    tool: ToolDeclaration,
+    args: Record<string, unknown>,
+  ): { valid: boolean; errors: string[] } {
+    const errors: string[] = [];
+    const properties = tool.parameters.properties || {};
+    const required = tool.parameters.required || [];
+
+    for (const key of required) {
+      if (args[key] === undefined || args[key] === null) {
+        errors.push(`Missing required parameter: ${key}`);
+      }
+    }
+
+    for (const [key, value] of Object.entries(args)) {
+      const prop = properties[key];
+      if (!prop) {
+        errors.push(`Unknown parameter: ${key}`);
+        continue;
+      }
+
+      if (value !== undefined && value !== null) {
+        const typeValid = this.validateType(value, prop);
+        if (!typeValid) {
+          errors.push(`Invalid type for ${key}: expected ${prop.type}, got ${typeof value}`);
+        }
+
+        if (prop.enum && !prop.enum.includes(String(value))) {
+          errors.push(`Invalid value for ${key}: must be one of ${prop.enum.join(', ')}`);
+        }
+      }
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
+
+  private validateType(value: unknown, prop: ToolParameterProperty): boolean {
+    const type = prop.type;
+    if (type === 'string') return typeof value === 'string';
+    if (type === 'integer' || type === 'number') return typeof value === 'number';
+    if (type === 'boolean') return typeof value === 'boolean';
+    if (type === 'object') return typeof value === 'object' && value !== null;
+    if (type === 'array') return Array.isArray(value);
+    return true;
   }
 }

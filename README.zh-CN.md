@@ -14,6 +14,8 @@ Agent SKILL 框架 —— 与 [Agent Skills Specification](https://agentskills.i
 - **安装前预览** — 暂存到临时目录，检视后再决定安装或取消
 - **自动依赖安装** — 内置 npm / pip，支持通过 `IDependencyInstaller` 扩展任意语言
 - **manifest.json 工具声明** — 解析并暴露为 function-call 格式的工具定义
+- **脚本执行** — 通过 `runScript()` 执行技能工具，支持 JSON Schema 验证
+- **命令行支持** — `skill` 命令用于技能管理和工具执行
 - **安全防护** — zip-slip 检测、路径遍历拦截、名称与目录一致性校验
 - **JSON 持久化注册表** — 跟踪已安装技能状态
 
@@ -67,6 +69,58 @@ const tools = sf.listTools('my-skill');
 await sf.uninstall('my-skill');
 ```
 
+### 命令行工具
+
+全局安装后（`npm link` 或 `npm install -g skill-framework`），可使用 `skill` 命令：
+
+```bash
+# 列出已安装技能
+skill list
+
+# 安装技能
+skill install ./my-skill
+skill install ./my-skill.zip
+
+# 卸载技能
+skill uninstall my-skill
+
+# 运行技能工具（参数为 JSON 字符串）
+skill run my-skill search '{"keyword":"茅台"}'
+skill run my-skill kline '{"code":"600519","period":"daily","limit":60}'
+
+# 显示帮助
+skill help
+```
+
+**环境变量：**
+- `SKILL_HOME` — 自定义技能存储目录（默认：包根目录下的 `./skills`）
+
+```bash
+SKILL_HOME=~/.skills skill list
+```
+
+### 脚本执行（runScript）
+
+通过 JSON Schema 验证执行技能工具脚本：
+
+```ts
+// 执行工具并验证参数
+const result = await sf.runScript({
+  name: 'my-skill',
+  toolName: 'search',
+  args: '{"keyword":"茅台"}'  // 来自 LLM 的 JSON 字符串
+});
+
+console.log(result.stdout);   // 脚本输出
+console.log(result.stderr);   // 错误输出
+console.log(result.exitCode); // 退出码
+```
+
+`args` 参数接受 JSON 字符串，会根据工具的 `manifest.json` 参数 schema 进行验证：
+- 检查必填字段
+- 验证类型（string、number、boolean 等）
+- 校验枚举值
+
 ### 预览模式
 
 ```ts
@@ -117,7 +171,7 @@ const allTools = sf.getAllSkillToolDeclarations();
 
 ## 框架工具定义（LLM Function Calling）
 
-框架通过 `getFrameworkToolDeclarations()` 暴露以下 6 个工具，可直接注入大模型的 tools/functions 列表：
+框架通过 `getFrameworkToolDeclarations()` 暴露以下 7 个工具，可直接注入大模型的 tools/functions 列表：
 
 ### `skill_list`
 
@@ -222,6 +276,26 @@ const allTools = sf.getAllSkillToolDeclarations();
 }
 ```
 
+### `skill_run_script`
+
+执行技能工具脚本。根据工具的 JSON Schema 验证参数后运行脚本。
+
+```json
+{
+  "name": "skill_run_script",
+  "description": "Execute a skill tool script. Returns stdout/stderr as JSON strings.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "name": { "type": "string", "description": "Skill name" },
+      "toolName": { "type": "string", "description": "Tool name declared in manifest.json" },
+      "args": { "type": "string", "description": "Tool arguments as json string" }
+    },
+    "required": ["name", "toolName"]
+  }
+}
+```
+
 ### 业务工具命名空间
 
 技能通过 `manifest.json` 声明的业务工具会被框架自动加上命名空间前缀 `skill.{skillName}.{toolName}`，避免跨技能名称冲突。调用 `getAllSkillToolDeclarations()` 可一次性获取所有技能的业务工具定义。
@@ -242,6 +316,7 @@ const allTools = sf.getAllSkillToolDeclarations();
 | `installPreviewed(tempDir)` | 安装已预览的技能 |
 | `cancelPreview(tempDir)` | 取消预览并清理 |
 | `listTools(name)` | 列出技能声明的工具 |
+| `runScript(params)` | 执行技能工具脚本，带 JSON Schema 验证 |
 | `getFrameworkToolDeclarations()` | 获取框架级工具声明 |
 | `getSkillToolDeclarations(name)` | 获取特定技能的命名空间工具声明 |
 | `getAllSkillToolDeclarations()` | 获取所有技能的工具声明 |
