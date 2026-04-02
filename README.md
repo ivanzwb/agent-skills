@@ -1,6 +1,6 @@
-# skill-framework
+# agent-skills
 
-[![CI](https://github.com/<owner>/skill-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/<owner>/skill-framework/actions/workflows/ci.yml)
+[![CI](https://github.com/<owner>/agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/<owner>/agent-skills/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [中文文档](README.zh-CN.md)
@@ -37,13 +37,13 @@ src/
 ### Installation
 
 ```bash
-npm install skill-framework
+npm install agent-skills
 ```
 
 ### Basic Usage
 
 ```ts
-import { SkillFramework } from 'skill-framework';
+import { SkillFramework } from 'agent-skills';
 
 // Initialize (point to skills storage directory)
 const sf = SkillFramework.init('./skills');
@@ -71,7 +71,7 @@ await sf.uninstall('my-skill');
 
 ### CLI Usage
 
-After installing the package globally (`npm link` or `npm install -g skill-framework`), you can use the `skill` command:
+After installing the package globally (`npm link` or `npm install -g agent-skills`), you can use the `skill` command:
 
 ```bash
 # List installed skills
@@ -140,7 +140,7 @@ sf.cancelPreview(preview.tempDir);
 The framework includes built-in npm and pip installers. Add support for any language by implementing `IDependencyInstaller`:
 
 ```ts
-import { SkillFramework, IDependencyInstaller } from 'skill-framework';
+import { SkillFramework, IDependencyInstaller } from 'agent-skills';
 
 const cargoInstaller: IDependencyInstaller = {
   type: 'cargo',

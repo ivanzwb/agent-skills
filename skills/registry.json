@@ -2,7 +2,7 @@
   {
     "name": "stock-analysis",
     "status": "installed",
-    "rootPath": "C:\\Projects\\skill-framework\\skills\\stock-analysis",
+    "rootPath": "C:\\Projects\\agent-skills\\skills\\stock-analysis",
     "frontmatter": {
       "name": "stock-analysis",
       "description": "A股股票数据分析工具，提供股票搜索、K线数据、基本面数据、板块信息、新闻等",

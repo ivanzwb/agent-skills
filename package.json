@@ -1,5 +1,5 @@
 {
-  "name": "skill-framework",
+  "name": "agent-skills",
   "version": "1.0.0",
   "description": "Agent SKILL framework - skill package management, loading, and tool binding",
   "main": "dist/index.js",
@@ -29,7 +29,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/<owner>/skill-framework.git"
+    "url": "https://github.com/ivanzwb/agent-skills.git"
   },
   "dependencies": {
     "adm-zip": "^0.5.10",

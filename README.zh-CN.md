@@ -1,6 +1,6 @@
-# skill-framework
+# agent-skills
 
-[![CI](https://github.com/<owner>/skill-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/<owner>/skill-framework/actions/workflows/ci.yml)
+[![CI](https://github.com/<owner>/agent-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/<owner>/agent-skills/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [English](README.md)
@@ -37,13 +37,13 @@ src/
 ### 安装
 
 ```bash
-npm install skill-framework
+npm install agent-skills
 ```
 
 ### 基本使用
 
 ```ts
-import { SkillFramework } from 'skill-framework';
+import { SkillFramework } from 'agent-skills';
 
 // 初始化（指向技能存储目录）
 const sf = SkillFramework.init('./skills');
@@ -71,7 +71,7 @@ await sf.uninstall('my-skill');
 
 ### 命令行工具
 
-全局安装后（`npm link` 或 `npm install -g skill-framework`），可使用 `skill` 命令：
+全局安装后（`npm link` 或 `npm install -g agent-skills`），可使用 `skill` 命令：
 
 ```bash
 # 列出已安装技能
@@ -140,7 +140,7 @@ sf.cancelPreview(preview.tempDir);
 框架内置 npm 和 pip 安装器，可通过实现 `IDependencyInstaller` 添加任意语言支持：
 
 ```ts
-import { SkillFramework, IDependencyInstaller } from 'skill-framework';
+import { SkillFramework, IDependencyInstaller } from 'agent-skills';
 
 const cargoInstaller: IDependencyInstaller = {
   type: 'cargo',
