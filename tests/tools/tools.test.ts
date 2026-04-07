@@ -188,9 +188,9 @@ describe('SkillFrameworkTools', () => {
   });
 
   describe('getFrameworkToolDeclarations', () => {
-    it('returns 7 framework tool declarations', () => {
+    it('returns 10 framework tool declarations', () => {
       const decls = tools.getFrameworkToolDeclarations();
-      expect(decls).toHaveLength(7);
+      expect(decls).toHaveLength(10);
       const names = decls.map((d) => d.name);
       expect(names).toContain('skill_list');
       expect(names).toContain('skill_install');
@@ -199,6 +199,9 @@ describe('SkillFrameworkTools', () => {
       expect(names).toContain('skill_load_reference');
       expect(names).toContain('skill_list_tools');
       expect(names).toContain('skill_run_script');
+      expect(names).toContain('skill_search');
+      expect(names).toContain('skill_install_from_network');
+      expect(names).toContain('skill_preview_from_network');
     });
   });
 

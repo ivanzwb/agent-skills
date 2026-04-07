@@ -200,7 +200,9 @@ export class SkillFramework {
    * Renames the temp dir to the final skill directory, installs deps, and registers.
    */
   async installPreviewed(tempDir: string): Promise<SkillRegistryEntry> {
-    return this.installer.installFromStaged(tempDir);
+    const entry = await this.installer.installFromStaged(tempDir);
+    this.cleanupPreviewDirs();
+    return entry;
   }
 
   /**
@@ -289,6 +291,7 @@ export class SkillFramework {
       if (fs.existsSync(zipPath)) {
         fs.rmSync(zipPath);
       }
+      this.cleanupDownloadDir();
     }
   }
 
@@ -303,6 +306,35 @@ export class SkillFramework {
       if (fs.existsSync(zipPath)) {
         fs.rmSync(zipPath);
       }
+      this.cleanupDownloadDir();
+    }
+  }
+
+  /** Remove the .download temp directory if it's empty. */
+  private cleanupDownloadDir(): void {
+    const downloadDir = path.join(this.storageDir, '.download');
+    try {
+      if (fs.existsSync(downloadDir)) {
+        const remaining = fs.readdirSync(downloadDir);
+        if (remaining.length === 0) {
+          fs.rmSync(downloadDir, { recursive: true, force: true });
+        }
+      }
+    } catch {
+      // best-effort cleanup
+    }
+  }
+
+  /** Remove any leftover .preview-* directories. */
+  private cleanupPreviewDirs(): void {
+    try {
+      for (const entry of fs.readdirSync(this.storageDir)) {
+        if (entry.startsWith('.preview-')) {
+          fs.rmSync(path.join(this.storageDir, entry), { recursive: true, force: true });
+        }
+      }
+    } catch {
+      // best-effort cleanup
     }
   }
 

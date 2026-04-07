@@ -31,11 +31,24 @@ function sanitizeArchiveEntry(targetDir: string, entryName: string): string {
   return assertPathWithinRoot(targetDir, entryName);
 }
 
-function assertNameMatchesDir(skillName: string, dirPath: string): void {
+/**
+ * If the directory name doesn't match the skill name, rename it.
+ * Returns the (possibly new) directory path.
+ */
+function ensureNameMatchesDir(skillName: string, dirPath: string, skillsDir: string): string {
   const dirName = path.basename(dirPath);
-  if (dirName !== skillName) {
-    throw new SkillSecurityError(`Skill name "${skillName}" does not match directory name "${dirName}"`);
+  if (dirName === skillName) {
+    return dirPath;
   }
+  const targetDir = path.join(skillsDir, skillName);
+  if (fs.existsSync(targetDir)) {
+    throw new SkillFrameworkError(
+      `Skill directory already exists: ${skillName}. Uninstall first.`,
+      'ALREADY_EXISTS',
+    );
+  }
+  fs.renameSync(dirPath, targetDir);
+  return targetDir;
 }
 
 export interface SkillInstallerConfig {
@@ -104,7 +117,7 @@ export class SkillInstaller {
     try {
       const skillMdPath = path.join(skillRoot, 'SKILL.md');
       let skillMdExists = fs.existsSync(skillMdPath);
-      
+
       if (!skillMdExists && fs.existsSync(skillRoot) && fs.statSync(skillRoot).isDirectory()) {
         const findSkillMd = (dir: string): string | null => {
           try {
@@ -122,7 +135,7 @@ export class SkillInstaller {
           }
           return null;
         };
-        
+
         const foundPath = findSkillMd(skillRoot);
         if (foundPath) {
           const foundDir = path.dirname(foundPath);
@@ -135,7 +148,7 @@ export class SkillInstaller {
           }
         }
       }
-      
+
       if (!fs.existsSync(skillMdPath)) {
         throw new SkillValidationError(
           `SKILL.md not found in package root: ${skillRoot}`,
@@ -145,7 +158,7 @@ export class SkillInstaller {
       const raw = fs.readFileSync(skillMdPath, 'utf-8');
       const doc = parseSkillMd(raw);
 
-      assertNameMatchesDir(doc.frontmatter.name, skillRoot);
+      skillRoot = ensureNameMatchesDir(doc.frontmatter.name, skillRoot, this.config.skillsDir);
 
       await this.dependencyManager.installAll(skillRoot);
 
@@ -258,7 +271,7 @@ export class SkillInstaller {
 
     const skillMdPath = path.join(resolvedTemp, 'SKILL.md');
     let skillMdExists = fs.existsSync(skillMdPath);
-    
+
     if (!skillMdExists && fs.existsSync(resolvedTemp) && fs.statSync(resolvedTemp).isDirectory()) {
       const findSkillMd = (dir: string): string | null => {
         try {
@@ -276,7 +289,7 @@ export class SkillInstaller {
         }
         return null;
       };
-      
+
       const foundPath = findSkillMd(resolvedTemp);
       if (foundPath) {
         const foundDir = path.dirname(foundPath);
@@ -298,7 +311,7 @@ export class SkillInstaller {
     const doc = parseSkillMd(raw);
     const skillName = doc.frontmatter.name;
 
-    const finalDir = path.join(this.config.skillsDir, skillName);
+    let finalDir = path.join(this.config.skillsDir, skillName);
     if (fs.existsSync(finalDir)) {
       throw new SkillFrameworkError(
         `Skill directory already exists: ${skillName}. Uninstall first.`,
@@ -309,7 +322,7 @@ export class SkillInstaller {
     fs.renameSync(resolvedTemp, finalDir);
 
     try {
-      assertNameMatchesDir(skillName, finalDir);
+      finalDir = ensureNameMatchesDir(skillName, finalDir, this.config.skillsDir);
       await this.dependencyManager.installAll(finalDir);
       const tools = parseManifest(finalDir);
 

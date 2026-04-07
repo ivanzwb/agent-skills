@@ -124,7 +124,7 @@ describe('SkillInstaller', () => {
       await expect(installer.install(skillDir)).rejects.toThrow('SKILL.md not found');
     });
 
-    it('throws when name does not match directory', async () => {
+    it('renames directory when name does not match', async () => {
       const skillDir = path.join(tmpDir, 'wrong-dir');
       fs.mkdirSync(skillDir, { recursive: true });
       fs.writeFileSync(
@@ -132,10 +132,12 @@ describe('SkillInstaller', () => {
         '---\nname: correct-name\ndescription: Test\n---\n# Body',
         'utf-8',
       );
-      await expect(installer.install(skillDir)).rejects.toThrow(SkillSecurityError);
+      const entry = await installer.install(skillDir);
+      expect(entry.name).toBe('correct-name');
+      expect(fs.existsSync(path.join(skillsDir, 'correct-name', 'SKILL.md'))).toBe(true);
     });
 
-    it('cleans up on failure', async () => {
+    it('cleans up renamed dir on failure', async () => {
       const skillDir = path.join(tmpDir, 'bad-name');
       fs.mkdirSync(skillDir, { recursive: true });
       fs.writeFileSync(
@@ -143,8 +145,11 @@ describe('SkillInstaller', () => {
         '---\nname: other-name\ndescription: Test\n---\n# Body',
         'utf-8',
       );
-      await expect(installer.install(skillDir)).rejects.toThrow();
-      // The copied dir in skillsDir should be cleaned up
+      // Install succeeds now (rename instead of throw), so install and then verify
+      const entry = await installer.install(skillDir);
+      expect(entry.name).toBe('other-name');
+      expect(fs.existsSync(path.join(skillsDir, 'other-name'))).toBe(true);
+      // Original wrong-named dir in skillsDir should not exist
       expect(fs.existsSync(path.join(skillsDir, 'bad-name'))).toBe(false);
     });
   });

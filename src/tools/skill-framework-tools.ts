@@ -204,6 +204,39 @@ export class SkillFrameworkTools {
           required: ['name', 'toolName'],
         },
       },
+      {
+        name: 'skill_search',
+        description: 'Search for skills across all sources (GitHub and ClawHub). Returns a list sorted by popularity.',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Search query string' },
+          },
+          required: ['query'],
+        },
+      },
+      {
+        name: 'skill_install_from_network',
+        description: 'Install a skill from the network. Accepts GitHub owner/repo (e.g. "owner/repo") or a ClawHub slug (e.g. "my-skill"). Sensitive operation, requires confirmation.',
+        parameters: {
+          type: 'object',
+          properties: {
+            source: { type: 'string', description: 'GitHub owner/repo or ClawHub slug' },
+          },
+          required: ['source'],
+        },
+      },
+      {
+        name: 'skill_preview_from_network',
+        description: 'Preview a skill from the network before installation. Accepts GitHub owner/repo or ClawHub slug.',
+        parameters: {
+          type: 'object',
+          properties: {
+            source: { type: 'string', description: 'GitHub owner/repo or ClawHub slug' },
+          },
+          required: ['source'],
+        },
+      },
     ];
   }
 
@@ -259,7 +292,7 @@ export class SkillFrameworkTools {
     }
 
     const fullScriptPath = path.join(entry.rootPath, 'scripts', `${params.toolName}.js`);
-    
+
     if (!fs.existsSync(fullScriptPath)) {
       throw new ScriptExecutionError(`Script not found: ${fullScriptPath}`);
     }

@@ -256,7 +256,7 @@ describe('SkillFramework', () => {
 
     it('getFrameworkToolDeclarations returns framework tools', () => {
       const decls = sf.getFrameworkToolDeclarations();
-      expect(decls.length).toBe(7);
+      expect(decls.length).toBe(10);
     });
 
     it('getSkillToolDeclarations returns namespaced tools', () => {
