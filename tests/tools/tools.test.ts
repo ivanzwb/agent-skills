@@ -1,16 +1,16 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { SkillFrameworkTools } from '../src/tools/skill-framework-tools';
-import { SkillRegistry } from '../src/registry/skill-registry';
-import { SkillInstaller, SkillInstallerConfig } from '../src/installer/skill-installer';
+import { SkillFrameworkTools } from '../../src/tools/skill-framework-tools';
+import { SkillRegistry } from '../../src/registry/skill-registry';
+import { SkillInstaller, SkillInstallerConfig } from '../../src/installer/skill-installer';
 import {
   SkillRegistryEntry,
   SkillStatus,
   SkillNotFoundError,
   SkillSecurityError,
   ToolDeclaration,
-} from '../src/types';
+} from '../../src/types';
 
 function makeEntry(name: string, rootPath: string, tools: ToolDeclaration[] = []): SkillRegistryEntry {
   return {

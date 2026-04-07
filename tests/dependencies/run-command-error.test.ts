@@ -10,7 +10,7 @@ jest.mock('child_process', () => ({
   spawn: mockSpawn,
 }));
 
-import { runCommand } from '../src/dependencies/run-command';
+import { runCommand } from '../../src/dependencies/run-command';
 
 describe('runCommand – spawn error event', () => {
   afterEach(() => {

@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { SkillRegistry } from '../src/registry/skill-registry';
-import { SkillRegistryEntry, SkillStatus, SkillNotFoundError } from '../src/types';
+import { SkillRegistry } from '../../src/registry/skill-registry';
+import { SkillRegistryEntry, SkillStatus, SkillNotFoundError } from '../../src/types';
 
 function makeEntry(name: string): SkillRegistryEntry {
   return {

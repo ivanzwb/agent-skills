@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { parseManifest } from '../src/parsers/manifest-parser';
-import { SkillValidationError } from '../src/types';
+import { parseManifest } from '../../src/parsers/manifest-parser';
+import { SkillValidationError } from '../../src/types';
 
 describe('parseManifest', () => {
   let tmpDir: string;

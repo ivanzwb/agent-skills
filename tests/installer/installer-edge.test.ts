@@ -6,9 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { SkillSecurityError, SkillValidationError } from '../src/types';
-
-// ── AdmZip mock for malicious archive entries ────────────────────
+import { SkillSecurityError, SkillValidationError } from '../../src/types';
 
 let mockEntries: Array<{ entryName: string; isDirectory: boolean }> = [];
 
@@ -19,8 +17,8 @@ jest.mock('adm-zip', () => {
   }));
 });
 
-import { SkillInstaller, SkillInstallerConfig } from '../src/installer/skill-installer';
-import { SkillRegistry } from '../src/registry/skill-registry';
+import { SkillInstaller, SkillInstallerConfig } from '../../src/installer/skill-installer';
+import { SkillRegistry } from '../../src/registry/skill-registry';
 
 describe('SkillInstaller – mocked AdmZip edge cases', () => {
   let tmpDir: string;

@@ -1,5 +1,5 @@
-import { parseSkillMd } from '../src/parsers/skill-parser';
-import { SkillValidationError } from '../src/types';
+import { parseSkillMd } from '../../src/parsers/skill-parser';
+import { SkillValidationError } from '../../src/types';
 
 describe('parseSkillMd', () => {
   const validMd = [

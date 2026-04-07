@@ -6,6 +6,7 @@ import {
   SkillListResult,
   SkillPreview,
   SkillValidationError,
+  SkillFrameworkError,
   ToolDeclaration,
   SkillRegistryEntry,
   IDependencyInstaller,
@@ -15,6 +16,8 @@ import { SkillInstaller, SkillInstallerConfig } from './installer/skill-installe
 import { SkillFrameworkTools } from './tools/skill-framework-tools';
 import { parseSkillMd } from './parsers/skill-parser';
 import { parseManifest } from './parsers/manifest-parser';
+import { SkillFinder, SkillSearchResult } from './finder/skill-finder';
+import { SkillDownloader } from './finder/skill-downloader';
 
 export interface SkillFrameworkOptions {
   /** Custom dependency installers. Defaults to built-in npm + pip. */
@@ -215,6 +218,66 @@ export class SkillFramework {
       toolName: params.toolName,
       args: params.args,
     });
+  }
+
+  // ─── Network Operations ───────────────────────────────────────────
+
+  /** Search for skills from the network. */
+  static async searchSkills(query: string): Promise<SkillSearchResult[]> {
+    return SkillFinder.search(query);
+  }
+
+    /**
+   * Preview a skill from a GitHub repository before installation.
+   */
+  async previewSkillFromNetwork(source: string): Promise<SkillPreview> {
+    const parsed = SkillFinder.parseSkillSource(source);
+    if (!parsed) {
+      throw new SkillFrameworkError(
+        `Invalid source format. Use owner/repo format (e.g., vercel-labs/agent-skills)`,
+        'INVALID_SOURCE',
+      );
+    }
+
+    const downloader = new SkillDownloader({
+      destDir: this.storageDir,
+    });
+
+    const zipPath = await downloader.downloadFromGitHub(parsed.owner, parsed.repo);
+
+    try {
+      return this.previewSkill(zipPath);
+    } finally {
+      if (fs.existsSync(zipPath)) {
+        fs.rmSync(zipPath);
+      }
+    }
+  }
+
+  /** Install a skill from a GitHub repository (owner/repo format). */
+  async installFromNetwork(source: string): Promise<SkillRegistryEntry> {
+    const parsed = SkillFinder.parseSkillSource(source);
+    if (!parsed) {
+      throw new SkillFrameworkError(
+        `Invalid source format. Use owner/repo format (e.g., vercel-labs/agent-skills)`,
+        'INVALID_SOURCE',
+      );
+    }
+
+    const downloader = new SkillDownloader({
+      destDir: this.storageDir,
+    });
+
+    const zipPath = await downloader.downloadFromGitHub(parsed.owner, parsed.repo);
+
+    try {
+      const entry = await this.installer.install(zipPath);
+      return entry;
+    } finally {
+      if (fs.existsSync(zipPath)) {
+        fs.rmSync(zipPath);
+      }
+    }
   }
 
 }

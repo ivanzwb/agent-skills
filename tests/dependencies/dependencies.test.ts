@@ -1,11 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { NpmInstaller } from '../src/dependencies/npm-installer';
-import { PipInstaller } from '../src/dependencies/pip-installer';
-import { DependencyManager } from '../src/dependencies/dependency-manager';
-import { IDependencyInstaller, DependencyInstallResult } from '../src/types';
-import * as runCommandModule from '../src/dependencies/run-command';
+import { NpmInstaller } from '../../src/dependencies/npm-installer';
+import { PipInstaller } from '../../src/dependencies/pip-installer';
+import { DependencyManager } from '../../src/dependencies/dependency-manager';
+import { IDependencyInstaller, DependencyInstallResult } from '../../src/types';
+import * as runCommandModule from '../../src/dependencies/run-command';
 
 describe('NpmInstaller', () => {
   let tmpDir: string;

@@ -18,7 +18,8 @@ async function main() {
     console.log('');
     console.log('Commands:');
     console.log('  list                      List all installed skills');
-    console.log('  install <source>          Install a skill from directory or zip');
+    console.log('  find <query>              Search for skills from the network');
+    console.log('  install <source>          Install a skill from directory, zip, or GitHub');
     console.log('  uninstall <name>          Uninstall a skill');
     console.log('  run <skill> <tool> [args] Run a skill tool');
     console.log('  help                      Show this help message');
@@ -40,6 +41,26 @@ async function main() {
         break;
       }
 
+      case 'find': {
+        const query = args[1];
+        if (!query) {
+          console.error('Error: query is required');
+          console.error('Usage: skill find <query>');
+          process.exit(1);
+        }
+        const results = await SkillFramework.searchSkills(query);
+        if (results.length === 0) {
+          console.log('No skills found.');
+        } else {
+          console.log('Found skills:');
+          for (const r of results) {
+            console.log(`  ${r.owner}/${r.repo} - ${r.description}`);
+            console.log(`    Install: skill install ${r.owner}/${r.repo}`);
+          }
+        }
+        break;
+      }
+
       case 'install': {
         const source = args[1];
         if (!source) {
@@ -47,8 +68,40 @@ async function main() {
           console.error('Usage: skill install <source>');
           process.exit(1);
         }
-        const result = await framework.install(source);
+        let result;
+        if (source.includes('/')) {
+          result = await framework.installFromNetwork(source);
+        } else {
+          result = await framework.install(source);
+        }
         console.log(`Installed ${result.name}`);
+        break;
+      }
+
+      case 'preview': {
+        const source = args[1];
+        if (!source) {
+          console.error('Error: source is required');
+          console.error('Usage: skill preview <source>');
+          process.exit(1);
+        }
+        let preview;
+        if (source.includes('/')) {
+          preview = await framework.previewSkillFromNetwork(source);
+        } else {
+          preview = framework.previewSkill(source);
+        }
+        console.log(`Name: ${preview.name}`);
+        console.log(`Description: ${preview.description}`);
+        if (preview.license) console.log(`License: ${preview.license}`);
+        if (preview.compatibility) console.log(`Compatibility: ${preview.compatibility}`);
+        if (preview.tools.length > 0) {
+          console.log('Tools:');
+          for (const t of preview.tools) {
+            console.log(`  ${t.name} - ${t.description}`);
+          }
+        }
+        console.log(`\nTo install: skill install ${source}`);
         break;
       }
 
@@ -99,7 +152,9 @@ async function main() {
         console.log('');
         console.log('Commands:');
         console.log('  list                      List all installed skills');
-        console.log('  install <source>          Install a skill from directory or zip');
+        console.log('  find <query>              Search for skills from the network');
+        console.log('  install <source>          Install a skill from directory, zip, or GitHub');
+        console.log('  preview <source>         Preview a skill before installing');
         console.log('  uninstall <name>          Uninstall a skill');
         console.log('  run <skill> <tool> [args] Run a skill tool');
         console.log('  help                      Show this help message');

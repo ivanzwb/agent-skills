@@ -271,4 +271,20 @@ describe('SkillFramework', () => {
       expect(decls[0].name).toBe(`skill.${skillName}.biz-tool`);
     });
   });
+
+  describe('network operations', () => {
+    let sf: SkillFramework;
+
+    beforeEach(() => {
+      sf = SkillFramework.init(tmpDir);
+    });
+
+    it('installFromNetwork throws on invalid source format', async () => {
+      await expect(sf.installFromNetwork('invalid')).rejects.toThrow('Invalid source format');
+    });
+
+    it('previewSkillFromNetwork throws on invalid source format', async () => {
+      await expect(sf.previewSkillFromNetwork('invalid')).rejects.toThrow('Invalid source format');
+    });
+  });
 });

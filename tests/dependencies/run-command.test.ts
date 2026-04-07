@@ -1,4 +1,4 @@
-import { runCommand } from '../src/dependencies/run-command';
+import { runCommand } from '../../src/dependencies/run-command';
 
 describe('runCommand', () => {
   it('returns success for echo', async () => {

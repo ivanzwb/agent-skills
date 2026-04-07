@@ -2,20 +2,24 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import AdmZip from 'adm-zip';
-import { SkillInstaller, SkillInstallerConfig } from '../src/installer/skill-installer';
-
-// Mock adm-zip: default delegates to real impl; zip-slip tests override via mockImplementationOnce
-jest.mock('adm-zip', () => {
-  const Actual = jest.requireActual('adm-zip');
-  return jest.fn((...args: any[]) => new Actual(...args));
-});
-import { SkillRegistry } from '../src/registry/skill-registry';
+import { SkillInstaller, SkillInstallerConfig } from '../../src/installer/skill-installer';
+import { SkillRegistry } from '../../src/registry/skill-registry';
 import {
   SkillFrameworkError,
   SkillValidationError,
   SkillSecurityError,
   IDependencyInstaller,
-} from '../src/types';
+} from '../../src/types';
+
+jest.mock('adm-zip', () => {
+  const Actual = jest.requireActual('adm-zip');
+  return {
+    __esModule: true,
+    default: jest.fn((...args: any[]) => new Actual(...args)),
+  };
+});
+
+const MockAdmZip = AdmZip as unknown as jest.Mock;
 
 function createSkillDir(parentDir: string, name: string, opts?: { noSkillMd?: boolean; noManifest?: boolean; extraManifest?: object[] }): string {
   const skillDir = path.join(parentDir, name);
@@ -175,7 +179,7 @@ describe('SkillInstaller', () => {
       zip.writeZip(zipPath);
 
       // Override next AdmZip construction (inside source code) to return malicious entries
-      (AdmZip as unknown as jest.Mock).mockImplementationOnce(() => ({
+      MockAdmZip.mockImplementationOnce(() => ({
         getEntries: () => [
           { entryName: 'skill-x/../../etc/evil', isDirectory: false },
         ],
@@ -248,7 +252,7 @@ describe('SkillInstaller', () => {
       const zipPath = path.join(tmpDir, 'evil-stage.zip');
       zip.writeZip(zipPath);
 
-      (AdmZip as unknown as jest.Mock).mockImplementationOnce(() => ({
+      MockAdmZip.mockImplementationOnce(() => ({
         getEntries: () => [
           { entryName: 'skill-x/../../etc/evil', isDirectory: false },
         ],
@@ -351,7 +355,7 @@ describe('SkillInstaller', () => {
       const custom: IDependencyInstaller = {
         type: 'custom',
         detect: () => true,
-        install: async (root) => {
+        install: async (root: string) => {
           installCalled.push(root);
           return { type: 'custom', success: true, output: '' };
         },

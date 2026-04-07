@@ -6,11 +6,10 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as realPath from 'path';
-import { SkillSecurityError, SkillStatus, SkillRegistryEntry, ToolDeclaration } from '../src/types';
+import { SkillSecurityError, SkillStatus, SkillRegistryEntry, ToolDeclaration } from '../../src/types';
 
-const actualPath = jest.requireActual('path') as typeof import('path');
+const actualPath = realPath;
 
-// Override only normalize to let traversal paths slip through the naive check
 jest.mock('path', () => {
   const actual = jest.requireActual('path') as typeof import('path');
   return {
@@ -20,9 +19,9 @@ jest.mock('path', () => {
 });
 
 import * as pathMock from 'path';
-import { SkillRegistry } from '../src/registry/skill-registry';
-import { SkillInstaller, SkillInstallerConfig } from '../src/installer/skill-installer';
-import { SkillFrameworkTools } from '../src/tools/skill-framework-tools';
+import { SkillRegistry } from '../../src/registry/skill-registry';
+import { SkillInstaller, SkillInstallerConfig } from '../../src/installer/skill-installer';
+import { SkillFrameworkTools } from '../../src/tools/skill-framework-tools';
 
 function makeEntry(name: string, rootPath: string): SkillRegistryEntry {
   return {
