@@ -52,14 +52,15 @@ export class SkillDownloader {
 
   async downloadFromGitHub(owner: string, repo: string): Promise<string> {
     const branch = this.options.branch || 'main';
-    const downloadUrl = `https://github.com/${owner}/${repo}/archive/refs/heads/${branch}.zip`;
+    const githubDownload = SkillFinder.getMirror().githubDownload;
+    const downloadUrl = `${githubDownload}/${owner}/${repo}/archive/refs/heads/${branch}.zip`;
 
     const tempZip = path.join(this.options.destDir, `${repo}-${Date.now()}.zip`);
 
     try {
       await downloadFile(downloadUrl, tempZip);
     } catch (e) {
-      const fallbackUrl = `https://github.com/${owner}/${repo}/archive/refs/heads/master.zip`;
+      const fallbackUrl = `${githubDownload}/${owner}/${repo}/archive/refs/heads/master.zip`;
       await downloadFile(fallbackUrl, tempZip);
     }
 

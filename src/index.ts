@@ -16,12 +16,14 @@ import { SkillInstaller, SkillInstallerConfig } from './installer/skill-installe
 import { SkillFrameworkTools } from './tools/skill-framework-tools';
 import { parseSkillMd } from './parsers/skill-parser';
 import { parseManifest } from './parsers/manifest-parser';
-import { SkillFinder, SkillSearchResult } from './finder/skill-finder';
+import { SkillFinder, SkillSearchResult, MirrorConfig } from './finder/skill-finder';
 import { SkillDownloader } from './finder/skill-downloader';
 
 export interface SkillFrameworkOptions {
   /** Custom dependency installers. Defaults to built-in npm + pip. */
   dependencyInstallers?: IDependencyInstaller[];
+  /** Mirror URLs for GitHub and ClawHub APIs. Also configurable via env vars SKILL_GITHUB_API, SKILL_GITHUB_DOWNLOAD, SKILL_CLAWHUB_API. */
+  mirror?: MirrorConfig;
 }
 
 /**
@@ -78,6 +80,10 @@ export class SkillFramework {
 
     this.installer = new SkillInstaller(installerConfig, this.registry);
     this._tools = new SkillFrameworkTools(this.registry, this.installer);
+
+    if (options?.mirror) {
+      SkillFinder.configureMirror(options.mirror);
+    }
   }
 
   /**
@@ -90,6 +96,11 @@ export class SkillFramework {
       throw new Error(`Skills directory does not exist: ${resolved}`);
     }
     return new SkillFramework(resolved, options);
+  }
+
+  /** Configure mirror URLs for GitHub and ClawHub APIs. */
+  static configureMirror(config: MirrorConfig): void {
+    SkillFinder.configureMirror(config);
   }
 
   // ─── Skill Lifecycle ────────────────────────────────────────────
@@ -270,7 +281,8 @@ export class SkillFramework {
     fs.mkdirSync(downloadDir, { recursive: true });
 
     if (parsed.type === 'clawhub') {
-      const downloadUrl = `https://clawhub.ai/api/v1/download?slug=${encodeURIComponent(parsed.slug)}&tag=latest`;
+      const clawHubApi = SkillFinder.getMirror().clawHubApi;
+      const downloadUrl = `${clawHubApi}/download?slug=${encodeURIComponent(parsed.slug)}&tag=latest`;
       const tempZip = path.join(downloadDir, `${parsed.slug}-${Date.now()}.zip`);
       const { downloadFile } = await import('./finder/skill-downloader');
       await downloadFile(downloadUrl, tempZip);
@@ -341,3 +353,4 @@ export class SkillFramework {
 }
 
 export * from './types';
+export type { MirrorConfig, SkillSearchResult } from './finder/skill-finder';

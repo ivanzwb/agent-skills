@@ -50,10 +50,39 @@ function fetchJson<T>(urlString: string): Promise<T> {
   });
 }
 
+export interface MirrorConfig {
+  /** GitHub API base URL (default: https://api.github.com) */
+  githubApi?: string;
+  /** GitHub download base URL (default: https://github.com) */
+  githubDownload?: string;
+  /** ClawHub API base URL (default: https://clawhub.ai/api/v1) */
+  clawHubApi?: string;
+}
+
+const DEFAULT_GITHUB_API = 'https://api.github.com';
+const DEFAULT_GITHUB_DOWNLOAD = 'https://github.com';
+const DEFAULT_CLAWHUB_API = 'https://clawhub.ai/api/v1';
+
+function resolveMirror(config?: MirrorConfig): Required<MirrorConfig> {
+  return {
+    githubApi: config?.githubApi || process.env.SKILL_GITHUB_API || DEFAULT_GITHUB_API,
+    githubDownload: config?.githubDownload || process.env.SKILL_GITHUB_DOWNLOAD || DEFAULT_GITHUB_DOWNLOAD,
+    clawHubApi: config?.clawHubApi || process.env.SKILL_CLAWHUB_API || DEFAULT_CLAWHUB_API,
+  };
+}
+
 export class SkillFinder {
-  private static readonly SEARCH_API = 'https://api.github.com/search/repositories';
-  private static readonly SKILLS_INDEX_URL = 'https://raw.githubusercontent.com/ivanzwb/agent-skills/main/skills/index.json';
-  private static readonly CLAWHUB_API = 'https://clawhub.ai/api/v1';
+  private static mirror: Required<MirrorConfig> = resolveMirror();
+
+  /** Configure mirror URLs for GitHub and ClawHub. */
+  static configureMirror(config: MirrorConfig): void {
+    this.mirror = resolveMirror(config);
+  }
+
+  /** Get the current mirror configuration. */
+  static getMirror(): Required<MirrorConfig> {
+    return { ...this.mirror };
+  }
 
   private static async searchClawHub(query: string): Promise<SkillSearchResult[]> {
     try {
@@ -68,7 +97,7 @@ export class SkillFinder {
         }>;
       }
 
-      const url = `${this.CLAWHUB_API}/search?q=${encodeURIComponent(query)}`;
+      const url = `${this.mirror.clawHubApi}/search?q=${encodeURIComponent(query)}`;
       const response = await fetchJson<ClawHubSearchResponse>(url);
 
       return response.results.map((item) => ({
@@ -87,7 +116,7 @@ export class SkillFinder {
   }
 
   private static async searchGitHub(query: string): Promise<SkillSearchResult[]> {
-    const searchUrl = `${this.SEARCH_API}?q=${encodeURIComponent(query)}+topic:agent-skill+in:name&sort=stars&order=desc`;
+    const searchUrl = `${this.mirror.githubApi}/search/repositories?q=${encodeURIComponent(query)}+topic:agent-skill+in:name&sort=stars&order=desc`;
 
     interface GitHubSearchResponse {
       items: Array<{
@@ -134,7 +163,8 @@ export class SkillFinder {
           url: string;
         }>;
       }
-      const index = await fetchJson<SkillsIndex>(this.SKILLS_INDEX_URL);
+      const indexUrl = `${this.mirror.githubDownload.replace('github.com', 'raw.githubusercontent.com')}/ivanzwb/agent-skills/main/skills/index.json`;
+      const index = await fetchJson<SkillsIndex>(indexUrl);
       return index.skills.map(s => ({ ...s, source: 'github' as const }));
     } catch {
       return [];
