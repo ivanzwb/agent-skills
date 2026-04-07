@@ -86,7 +86,11 @@ describe('SkillDownloader', () => {
     });
 
     it('returns null for invalid format', () => {
-      expect(SkillDownloader.parseSource('invalid')).toBeNull();
+      expect(SkillDownloader.parseSource('')).toBeNull();
+    });
+
+    it('returns null for clawhub slug', () => {
+      expect(SkillDownloader.parseSource('my-slug')).toBeNull();
     });
   });
 

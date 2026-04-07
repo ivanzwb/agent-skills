@@ -145,9 +145,36 @@ export class SkillFramework {
     const tempDir = this.installer.stageToTemp(source);
 
     try {
-      const skillMdPath = path.join(tempDir, 'SKILL.md');
+      let skillMdPath = path.join(tempDir, 'SKILL.md');
+
       if (!fs.existsSync(skillMdPath)) {
-        throw new SkillValidationError(`SKILL.md not found in staged directory`);
+        const findSkillMd = (dir: string): string | null => {
+          for (const entry of fs.readdirSync(dir)) {
+            const fullPath = path.join(dir, entry);
+            if (entry === 'SKILL.md') {
+              return fullPath;
+            }
+            if (fs.statSync(fullPath).isDirectory()) {
+              const found = findSkillMd(fullPath);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+
+        const foundPath = findSkillMd(tempDir);
+        if (foundPath) {
+          const foundDir = path.dirname(foundPath);
+          if (foundDir !== tempDir) {
+            const nestedContent = fs.readdirSync(foundDir);
+            for (const item of nestedContent) {
+              fs.renameSync(path.join(foundDir, item), path.join(tempDir, item));
+            }
+            fs.rmSync(foundDir, { recursive: true, force: true });
+          }
+        } else {
+          throw new SkillValidationError(`SKILL.md not found in staged directory`);
+        }
       }
 
       const raw = fs.readFileSync(skillMdPath, 'utf-8');
@@ -222,28 +249,39 @@ export class SkillFramework {
 
   // ─── Network Operations ───────────────────────────────────────────
 
-  /** Search for skills from the network. */
+  /** Search for skills from all sources (GitHub + ClawHub). */
   static async searchSkills(query: string): Promise<SkillSearchResult[]> {
     return SkillFinder.search(query);
   }
 
-    /**
-   * Preview a skill from a GitHub repository before installation.
-   */
-  async previewSkillFromNetwork(source: string): Promise<SkillPreview> {
+  /** Download a skill zip from the given source (GitHub or ClawHub). Returns the temp zip path. */
+  private async downloadSkillZip(source: string): Promise<string> {
     const parsed = SkillFinder.parseSkillSource(source);
     if (!parsed) {
       throw new SkillFrameworkError(
-        `Invalid source format. Use owner/repo format (e.g., vercel-labs/agent-skills)`,
+        `Invalid source format. Use owner/repo for GitHub or a slug for ClawHub.`,
         'INVALID_SOURCE',
       );
     }
 
-    const downloader = new SkillDownloader({
-      destDir: this.storageDir,
-    });
+    const downloadDir = path.join(this.storageDir, '.download');
+    fs.mkdirSync(downloadDir, { recursive: true });
 
-    const zipPath = await downloader.downloadFromGitHub(parsed.owner, parsed.repo);
+    if (parsed.type === 'clawhub') {
+      const downloadUrl = `https://clawhub.ai/api/v1/download?slug=${encodeURIComponent(parsed.slug)}&tag=latest`;
+      const tempZip = path.join(downloadDir, `${parsed.slug}-${Date.now()}.zip`);
+      const { downloadFile } = await import('./finder/skill-downloader');
+      await downloadFile(downloadUrl, tempZip);
+      return tempZip;
+    }
+
+    const downloader = new SkillDownloader({ destDir: downloadDir });
+    return downloader.downloadFromGitHub(parsed.owner, parsed.repo);
+  }
+
+  /** Preview a skill from the network (GitHub owner/repo or ClawHub slug). */
+  async previewSkillFromNetwork(source: string): Promise<SkillPreview> {
+    const zipPath = await this.downloadSkillZip(source);
 
     try {
       return this.previewSkill(zipPath);
@@ -254,21 +292,9 @@ export class SkillFramework {
     }
   }
 
-  /** Install a skill from a GitHub repository (owner/repo format). */
+  /** Install a skill from the network (GitHub owner/repo or ClawHub slug). */
   async installFromNetwork(source: string): Promise<SkillRegistryEntry> {
-    const parsed = SkillFinder.parseSkillSource(source);
-    if (!parsed) {
-      throw new SkillFrameworkError(
-        `Invalid source format. Use owner/repo format (e.g., vercel-labs/agent-skills)`,
-        'INVALID_SOURCE',
-      );
-    }
-
-    const downloader = new SkillDownloader({
-      destDir: this.storageDir,
-    });
-
-    const zipPath = await downloader.downloadFromGitHub(parsed.owner, parsed.repo);
+    const zipPath = await this.downloadSkillZip(source);
 
     try {
       const entry = await this.installer.install(zipPath);

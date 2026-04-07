@@ -103,6 +103,39 @@ export class SkillInstaller {
 
     try {
       const skillMdPath = path.join(skillRoot, 'SKILL.md');
+      let skillMdExists = fs.existsSync(skillMdPath);
+      
+      if (!skillMdExists && fs.existsSync(skillRoot) && fs.statSync(skillRoot).isDirectory()) {
+        const findSkillMd = (dir: string): string | null => {
+          try {
+            for (const entry of fs.readdirSync(dir)) {
+              const fullPath = path.join(dir, entry);
+              if (entry === 'SKILL.md') {
+                return fullPath;
+              }
+              if (fs.statSync(fullPath).isDirectory()) {
+                const found = findSkillMd(fullPath);
+                if (found) return found;
+              }
+            }
+          } catch {
+          }
+          return null;
+        };
+        
+        const foundPath = findSkillMd(skillRoot);
+        if (foundPath) {
+          const foundDir = path.dirname(foundPath);
+          if (foundDir !== skillRoot && fs.existsSync(foundDir) && fs.statSync(foundDir).isDirectory()) {
+            const nestedContent = fs.readdirSync(foundDir);
+            for (const item of nestedContent) {
+              fs.renameSync(path.join(foundDir, item), path.join(skillRoot, item));
+            }
+            fs.rmSync(foundDir, { recursive: true, force: true });
+          }
+        }
+      }
+      
       if (!fs.existsSync(skillMdPath)) {
         throw new SkillValidationError(
           `SKILL.md not found in package root: ${skillRoot}`,
@@ -168,10 +201,40 @@ export class SkillInstaller {
         if (entries.length === 0) {
           throw new SkillValidationError('Zip archive is empty');
         }
+
         for (const entry of entries) {
           sanitizeArchiveEntry(tempDir, entry.entryName);
         }
         zip.extractAllTo(tempDir, true);
+
+        let skillDirFound = false;
+        for (const entry of entries) {
+          if (entry.entryName.includes('/SKILL.md')) {
+            const parts = entry.entryName.split('/');
+            for (let i = 0; i < parts.length; i++) {
+              if (parts[i] === 'SKILL.md' && i > 0) {
+                const nestedSkillDirParts = parts.slice(0, i);
+                let nestedSkillDir = tempDir;
+                for (const p of nestedSkillDirParts) {
+                  nestedSkillDir = path.join(nestedSkillDir, p);
+                }
+                if (fs.existsSync(nestedSkillDir)) {
+                  skillDirFound = true;
+                  break;
+                }
+              }
+            }
+            if (skillDirFound) break;
+          }
+        }
+
+        if (!skillDirFound) {
+          const firstEntry = entries[0].entryName;
+          const topDir = firstEntry.split('/')[0];
+          if (topDir && fs.existsSync(path.join(tempDir, topDir))) {
+            skillDirFound = true;
+          }
+        }
       } else {
         throw new SkillFrameworkError('Source must be a directory or .zip file', 'INVALID_SOURCE');
       }
@@ -194,7 +257,40 @@ export class SkillInstaller {
     }
 
     const skillMdPath = path.join(resolvedTemp, 'SKILL.md');
-    if (!fs.existsSync(skillMdPath)) {
+    let skillMdExists = fs.existsSync(skillMdPath);
+    
+    if (!skillMdExists && fs.existsSync(resolvedTemp) && fs.statSync(resolvedTemp).isDirectory()) {
+      const findSkillMd = (dir: string): string | null => {
+        try {
+          for (const entry of fs.readdirSync(dir)) {
+            const fullPath = path.join(dir, entry);
+            if (entry === 'SKILL.md') {
+              return fullPath;
+            }
+            if (fs.statSync(fullPath).isDirectory()) {
+              const found = findSkillMd(fullPath);
+              if (found) return found;
+            }
+          }
+        } catch {
+        }
+        return null;
+      };
+      
+      const foundPath = findSkillMd(resolvedTemp);
+      if (foundPath) {
+        const foundDir = path.dirname(foundPath);
+        if (foundDir !== resolvedTemp && fs.existsSync(foundDir) && fs.statSync(foundDir).isDirectory()) {
+          const nestedContent = fs.readdirSync(foundDir);
+          for (const item of nestedContent) {
+            fs.renameSync(path.join(foundDir, item), path.join(resolvedTemp, item));
+          }
+          fs.rmSync(foundDir, { recursive: true, force: true });
+        }
+      } else {
+        throw new SkillValidationError(`SKILL.md not found in: ${resolvedTemp}`);
+      }
+    } else if (!skillMdExists) {
       throw new SkillValidationError(`SKILL.md not found in: ${resolvedTemp}`);
     }
 
@@ -270,29 +366,76 @@ export class SkillInstaller {
       throw new SkillValidationError('Zip archive is empty');
     }
 
-    const firstEntry = entries[0].entryName;
-    const topDir = firstEntry.split('/')[0];
-
-    if (!topDir) {
-      throw new SkillValidationError('Cannot determine skill directory from zip');
-    }
-
-    const targetDir = path.join(this.config.skillsDir, topDir);
-
-    if (fs.existsSync(targetDir)) {
-      throw new SkillFrameworkError(
-        `Skill directory already exists: ${topDir}. Uninstall first.`,
-        'ALREADY_EXISTS',
-      );
-    }
-
     for (const entry of entries) {
       sanitizeArchiveEntry(this.config.skillsDir, entry.entryName);
     }
 
+    let targetSkillDir = '';
+    let nestedSkillDir = '';
+
+    for (const entry of entries) {
+      if (entry.entryName.includes('/SKILL.md')) {
+        const parts = entry.entryName.split('/');
+        for (let i = 0; i < parts.length; i++) {
+          if (parts[i] === 'SKILL.md' && i > 0) {
+            const skillName = parts[i - 1];
+            targetSkillDir = path.join(this.config.skillsDir, skillName);
+            nestedSkillDir = path.join(this.config.skillsDir, ...parts.slice(0, i));
+            break;
+          }
+        }
+        if (targetSkillDir) break;
+      }
+    }
+
+    if (!targetSkillDir) {
+      const firstEntry = entries[0].entryName;
+      const topDir = firstEntry.split('/')[0];
+      if (topDir) {
+        targetSkillDir = path.join(this.config.skillsDir, topDir);
+      }
+    }
+
+    if (!targetSkillDir) {
+      throw new SkillValidationError('Cannot determine skill directory from zip');
+    }
+
+    if (fs.existsSync(targetSkillDir)) {
+      const existingSkillMd = path.join(targetSkillDir, 'SKILL.md');
+      if (fs.existsSync(existingSkillMd)) {
+        throw new SkillValidationError('Skill directory already exists');
+      }
+    }
+
     zip.extractAllTo(this.config.skillsDir, false);
 
-    return targetDir;
+    if (nestedSkillDir && nestedSkillDir !== targetSkillDir && fs.existsSync(nestedSkillDir)) {
+      const topDir = nestedSkillDir.split(path.sep).pop();
+      const topDirPath = topDir ? path.join(this.config.skillsDir, topDir) : null;
+
+      const nestedContent = fs.readdirSync(nestedSkillDir);
+      fs.mkdirSync(targetSkillDir, { recursive: true });
+      for (const item of nestedContent) {
+        const src = path.join(nestedSkillDir, item);
+        const dest = path.join(targetSkillDir, item);
+        if (fs.statSync(src).isDirectory()) {
+          fs.cpSync(src, dest, { recursive: true });
+        } else {
+          fs.renameSync(src, dest);
+        }
+      }
+
+      if (topDirPath && topDirPath !== nestedSkillDir && topDirPath !== targetSkillDir && fs.existsSync(topDirPath)) {
+        fs.rmSync(topDirPath, { recursive: true, force: true });
+      }
+    }
+
+    const skillMdPath = path.join(targetSkillDir, 'SKILL.md');
+    if (!fs.existsSync(skillMdPath) && fs.existsSync(targetSkillDir)) {
+      fs.rmSync(targetSkillDir, { recursive: true, force: true });
+    }
+
+    return targetSkillDir;
   }
 
   /** Remove a directory tree */

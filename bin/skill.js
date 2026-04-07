@@ -18,8 +18,9 @@ async function main() {
     console.log('');
     console.log('Commands:');
     console.log('  list                      List all installed skills');
-    console.log('  find <query>              Search for skills from the network');
-    console.log('  install <source>          Install a skill from directory, zip, or GitHub');
+    console.log('  find <query>              Search for skills from all sources');
+    console.log('  install <source>          Install a skill from directory, zip, GitHub, or ClawHub');
+    console.log('  preview <source>          Preview a skill before installing');
     console.log('  uninstall <name>          Uninstall a skill');
     console.log('  run <skill> <tool> [args] Run a skill tool');
     console.log('  help                      Show this help message');
@@ -54,8 +55,13 @@ async function main() {
         } else {
           console.log('Found skills:');
           for (const r of results) {
-            console.log(`  ${r.owner}/${r.repo} - ${r.description}`);
-            console.log(`    Install: skill install ${r.owner}/${r.repo}`);
+            if (r.source === 'clawhub') {
+              console.log(`  [ClawHub] ${r.slug} - ${r.description}`);
+              console.log(`    Install: skill install ${r.slug}`);
+            } else {
+              console.log(`  [GitHub] ${r.owner}/${r.repo} - ${r.description}`);
+              console.log(`    Install: skill install ${r.owner}/${r.repo}`);
+            }
           }
         }
         break;
@@ -72,7 +78,12 @@ async function main() {
         if (source.includes('/')) {
           result = await framework.installFromNetwork(source);
         } else {
-          result = await framework.install(source);
+          const localCheck = framework.listSkills().skills.find(s => s.name === source);
+          if (localCheck) {
+            result = await framework.install(source);
+          } else {
+            result = await framework.installFromNetwork(source);
+          }
         }
         console.log(`Installed ${result.name}`);
         break;
@@ -89,7 +100,12 @@ async function main() {
         if (source.includes('/')) {
           preview = await framework.previewSkillFromNetwork(source);
         } else {
-          preview = framework.previewSkill(source);
+          const localCheck = framework.listSkills().skills.find(s => s.name === source);
+          if (localCheck) {
+            preview = framework.previewSkill(source);
+          } else {
+            preview = await framework.previewSkillFromNetwork(source);
+          }
         }
         console.log(`Name: ${preview.name}`);
         console.log(`Description: ${preview.description}`);
@@ -152,8 +168,9 @@ async function main() {
         console.log('');
         console.log('Commands:');
         console.log('  list                      List all installed skills');
-        console.log('  find <query>              Search for skills from the network');
-        console.log('  install <source>          Install a skill from directory, zip, or GitHub');
+        console.log('  find <query>              Search for skills from the network (GitHub)');
+        console.log('  clawhub <query>           Search for skills from ClawHub registry');
+        console.log('  install <source>          Install a skill from directory, zip, GitHub, or ClawHub');
         console.log('  preview <source>         Preview a skill before installing');
         console.log('  uninstall <name>          Uninstall a skill');
         console.log('  run <skill> <tool> [args] Run a skill tool');

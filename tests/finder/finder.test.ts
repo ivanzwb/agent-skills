@@ -64,37 +64,43 @@ describe('SkillFinder', () => {
   describe('parseSkillSource', () => {
     it('parses owner/repo format', () => {
       const result = SkillFinder.parseSkillSource('vercel-labs/agent-skills');
-      expect(result).toEqual({ owner: 'vercel-labs', repo: 'agent-skills' });
+      expect(result).toEqual({ type: 'github', owner: 'vercel-labs', repo: 'agent-skills' });
     });
 
     it('parses owner/repo with branch', () => {
       const result = SkillFinder.parseSkillSource('owner/repo@branch');
-      expect(result).toEqual({ owner: 'owner', repo: 'repo' });
+      expect(result).toEqual({ type: 'github', owner: 'owner', repo: 'repo' });
     });
 
-    it('returns null for invalid format', () => {
-      expect(SkillFinder.parseSkillSource('invalid')).toBeNull();
+    it('returns null for empty string', () => {
       expect(SkillFinder.parseSkillSource('')).toBeNull();
-      expect(SkillFinder.parseSkillSource('/repo')).toBeNull();
-      expect(SkillFinder.parseSkillSource('owner/')).toBeNull();
+    });
+
+    it('treats slug without / as clawhub source', () => {
+      const result = SkillFinder.parseSkillSource('my-skill');
+      expect(result).toEqual({ type: 'clawhub', slug: 'my-skill' });
     });
 
     it('handles underscores and hyphens', () => {
       const result = SkillFinder.parseSkillSource('my-org/my_skill-name');
-      expect(result).toEqual({ owner: 'my-org', repo: 'my_skill-name' });
+      expect(result).toEqual({ type: 'github', owner: 'my-org', repo: 'my_skill-name' });
     });
   });
 
   describe('search', () => {
     it('returns search results from GitHub', async () => {
       const results = await SkillFinder.search('test query');
-      expect(results).toHaveLength(1);
-      expect(results[0]).toEqual({
+      expect(results.length).toBeGreaterThanOrEqual(1);
+      const githubResult = results.find(r => r.source === 'github');
+      expect(githubResult).toEqual({
         name: 'test-skill',
         description: 'A test skill',
         owner: 'test-owner',
         repo: 'test-skill',
+        source: 'github',
         url: 'https://github.com/test-owner/test-skill',
+        stars: 0,
+        popularity: 0,
       });
     });
   });

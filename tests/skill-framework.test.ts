@@ -280,11 +280,11 @@ describe('SkillFramework', () => {
     });
 
     it('installFromNetwork throws on invalid source format', async () => {
-      await expect(sf.installFromNetwork('invalid')).rejects.toThrow('Invalid source format');
+      await expect(sf.installFromNetwork('')).rejects.toThrow('Invalid source format');
     });
 
     it('previewSkillFromNetwork throws on invalid source format', async () => {
-      await expect(sf.previewSkillFromNetwork('invalid')).rejects.toThrow('Invalid source format');
+      await expect(sf.previewSkillFromNetwork('')).rejects.toThrow('Invalid source format');
     });
   });
 });

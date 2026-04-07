@@ -10,13 +10,13 @@ export interface DownloadOptions {
   branch?: string;
 }
 
-function downloadFile(urlString: string, destPath: string): Promise<void> {
+export function downloadFile(urlString: string, destPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const url = new URL(urlString);
     const client = url.protocol === 'https:' ? https : http;
     const file = fs.createWriteStream(destPath);
 
-    const req = client.get(url, { headers: { 'Accept': 'application/zip' } }, (res) => {
+    const req = client.get(url, { headers: { 'Accept': 'application/zip', 'User-Agent': 'agent-skills' } }, (res) => {
       if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         downloadFile(res.headers.location, destPath).then(resolve, reject);
         return;
@@ -43,7 +43,11 @@ export class SkillDownloader {
   constructor(private readonly options: DownloadOptions) {}
 
   static parseSource(source: string): { owner: string; repo: string } | null {
-    return SkillFinder.parseSkillSource(source);
+    const parsed = SkillFinder.parseSkillSource(source);
+    if (parsed && parsed.type === 'github') {
+      return { owner: parsed.owner, repo: parsed.repo };
+    }
+    return null;
   }
 
   async downloadFromGitHub(owner: string, repo: string): Promise<string> {
