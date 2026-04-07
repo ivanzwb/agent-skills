@@ -33,15 +33,17 @@ Agent SKILL 框架 —— 与 [Agent Skills Specification](https://agentskills.i
 
 ## 功能特性
 
-- **技能生命周期管理** — 从目录或 `.zip` 安装 / 卸载技能包
+- **技能生命周期管理** — 从目录、`.zip`、GitHub 仓库或 ClawHub 注册表安装 / 卸载技能包
+- **网络搜索与安装** — 跨 GitHub 和 ClawHub 搜索技能，通过 `owner/repo` 或 slug 安装
 - **三级渐进加载** — L0（索引摘要）→ L1（完整正文）→ L2（引用文档）
 - **安装前预览** — 暂存到临时目录，检视后再决定安装或取消
 - **自动依赖安装** — 内置 npm / pip，支持通过 `IDependencyInstaller` 扩展任意语言
 - **manifest.json 工具声明** — 解析并暴露为 function-call 格式的工具定义
 - **脚本执行** — 通过 `runScript()` 执行技能工具，支持 JSON Schema 验证
-- **命令行支持** — `skill` 命令用于技能管理和工具执行
-- **安全防护** — zip-slip 检测、路径遍历拦截、名称与目录一致性校验
+- **命令行支持** — `skill` 命令用于技能管理、搜索和工具执行
+- **安全防护** — zip-slip 检测、路径遍历拦截、自动重命名目录匹配技能名
 - **JSON 持久化注册表** — 跟踪已安装技能状态
+- **自动清理临时文件** — 安装完成后自动清理下载和预览目录
 
 ## 项目结构
 
@@ -51,6 +53,7 @@ src/
 ├── types/                           # 类型定义与错误类
 ├── parsers/                         # SKILL.md / manifest.json 解析器
 ├── dependencies/                    # 依赖安装抽象（npm、pip、自定义）
+├── finder/                          # 网络搜索（GitHub + ClawHub）与下载
 ├── registry/                        # JSON 文件持久化注册表
 ├── installer/                       # 安装 / 卸载 / 预览暂存
 └── tools/                           # 框架级工具声明（暴露给模型）
@@ -75,6 +78,13 @@ const sf = SkillFramework.init('./skills');
 // 安装技能
 await sf.install('./my-skill');          // 从目录
 await sf.install('./my-skill.zip');      // 从 zip
+
+// 搜索技能（GitHub + ClawHub）
+const results = await SkillFramework.searchSkills('stock');
+
+// 从网络安装（GitHub owner/repo 或 ClawHub slug）
+await sf.installFromNetwork('owner/repo');      // 从 GitHub
+await sf.installFromNetwork('my-skill-slug');   // 从 ClawHub
 
 // 列出已安装技能（L0 摘要）
 const { skills } = sf.listSkills();
@@ -101,9 +111,17 @@ await sf.uninstall('my-skill');
 # 列出已安装技能
 skill list
 
+# 搜索技能（GitHub + ClawHub）
+skill find stock-analysis
+
 # 安装技能
-skill install ./my-skill
-skill install ./my-skill.zip
+skill install ./my-skill              # 从本地目录
+skill install ./my-skill.zip           # 从 zip
+skill install owner/repo               # 从 GitHub
+skill install my-skill-slug            # 从 ClawHub
+
+# 预览技能（安装前检视）
+skill preview owner/repo
 
 # 卸载技能
 skill uninstall my-skill
@@ -195,7 +213,7 @@ const allTools = sf.getAllSkillToolDeclarations();
 
 ## 框架工具定义（LLM Function Calling）
 
-框架通过 `getFrameworkToolDeclarations()` 暴露以下 7 个工具，可直接注入大模型的 tools/functions 列表：
+框架通过 `getFrameworkToolDeclarations()` 暴露以下 10 个工具，可直接注入大模型的 tools/functions 列表：
 
 ### `skill_list`
 
@@ -320,6 +338,60 @@ const allTools = sf.getAllSkillToolDeclarations();
 }
 ```
 
+### `skill_search`
+
+跨所有源（GitHub 和 ClawHub）搜索技能，按流行度排序返回。
+
+```json
+{
+  "name": "skill_search",
+  "description": "Search for skills across all sources (GitHub and ClawHub). Returns a list sorted by popularity.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string", "description": "Search query string" }
+    },
+    "required": ["query"]
+  }
+}
+```
+
+### `skill_install_from_network`
+
+从网络安装技能。支持 GitHub `owner/repo` 或 ClawHub slug。**高敏感操作，需确认。**
+
+```json
+{
+  "name": "skill_install_from_network",
+  "description": "Install a skill from the network. Accepts GitHub owner/repo (e.g. \"owner/repo\") or a ClawHub slug (e.g. \"my-skill\"). Sensitive operation, requires confirmation.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "source": { "type": "string", "description": "GitHub owner/repo or ClawHub slug" }
+    },
+    "required": ["source"]
+  }
+}
+```
+
+### `skill_preview_from_network`
+
+安装前从网络预览技能。支持 GitHub `owner/repo` 或 ClawHub slug。
+
+```json
+{
+  "name": "skill_preview_from_network",
+  "description": "Preview a skill from the network before installation. Accepts GitHub owner/repo or ClawHub slug.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "source": { "type": "string", "description": "GitHub owner/repo or ClawHub slug" }
+    },
+    "required": ["source"]
+  }
+}
+```
+
 ### 业务工具命名空间
 
 技能通过 `manifest.json` 声明的业务工具会被框架自动加上命名空间前缀 `skill.{skillName}.{toolName}`，避免跨技能名称冲突。调用 `getAllSkillToolDeclarations()` 可一次性获取所有技能的业务工具定义。
@@ -339,6 +411,9 @@ const allTools = sf.getAllSkillToolDeclarations();
 | `previewSkill(source)` | 预览技能（暂存到临时目录） |
 | `installPreviewed(tempDir)` | 安装已预览的技能 |
 | `cancelPreview(tempDir)` | 取消预览并清理 |
+| `SkillFramework.searchSkills(query)` | 跨 GitHub 和 ClawHub 搜索技能 |
+| `installFromNetwork(source)` | 从 GitHub `owner/repo` 或 ClawHub slug 安装 |
+| `previewSkillFromNetwork(source)` | 从 GitHub `owner/repo` 或 ClawHub slug 预览 |
 | `listTools(name)` | 列出技能声明的工具 |
 | `runScript(params)` | 执行技能工具脚本，带 JSON Schema 验证 |
 | `getFrameworkToolDeclarations()` | 获取框架级工具声明 |

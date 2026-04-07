@@ -33,15 +33,17 @@ Building AI agents that use tools (function calling) often means writing glue co
 
 ## Features
 
-- **Skill lifecycle management** — Install / uninstall skill packages from directories or `.zip` archives
+- **Skill lifecycle management** — Install / uninstall skill packages from directories, `.zip` archives, GitHub repos, or ClawHub registry
+- **Network search & install** — Search skills across GitHub and ClawHub, install by `owner/repo` or slug
 - **Three-level progressive loading** — L0 (index summary) → L1 (full body) → L2 (reference documents)
 - **Pre-install preview** — Stage to a temp directory, inspect before deciding to install or cancel
 - **Automatic dependency installation** — Built-in npm / pip, extensible to any language via `IDependencyInstaller`
 - **manifest.json tool declarations** — Parsed and exposed as function-call format tool definitions
 - **Script execution** — Execute skill tools via `runScript()` with JSON Schema validation
-- **CLI support** — `skill` command for skill management and tool execution
-- **Security hardening** — Zip-slip detection, path traversal prevention, name-directory consistency validation
+- **CLI support** — `skill` command for skill management, search, and tool execution
+- **Security hardening** — Zip-slip detection, path traversal prevention, auto-rename to match skill name
 - **JSON persistent registry** — Tracks installed skill status
+- **Automatic temp cleanup** — Download and preview directories are cleaned up after install
 
 ## Project Structure
 
@@ -51,6 +53,7 @@ src/
 ├── types/                           # Type definitions and error classes
 ├── parsers/                         # SKILL.md / manifest.json parsers
 ├── dependencies/                    # Dependency installer abstraction (npm, pip, custom)
+├── finder/                          # Network search (GitHub + ClawHub) and download
 ├── registry/                        # JSON file persistent registry
 ├── installer/                       # Install / uninstall / preview staging
 └── tools/                           # Framework-level tool declarations (exposed to model)
@@ -75,6 +78,13 @@ const sf = SkillFramework.init('./skills');
 // Install a skill
 await sf.install('./my-skill');          // From directory
 await sf.install('./my-skill.zip');      // From zip
+
+// Search for skills across GitHub and ClawHub
+const results = await SkillFramework.searchSkills('stock');
+
+// Install from network (GitHub owner/repo or ClawHub slug)
+await sf.installFromNetwork('owner/repo');      // From GitHub
+await sf.installFromNetwork('my-skill-slug');   // From ClawHub
 
 // List installed skills (L0 summaries)
 const { skills } = sf.listSkills();
@@ -101,9 +111,17 @@ After installing the package globally (`npm link` or `npm install -g agent-skill
 # List installed skills
 skill list
 
+# Search for skills (GitHub + ClawHub)
+skill find stock-analysis
+
 # Install a skill
-skill install ./my-skill
-skill install ./my-skill.zip
+skill install ./my-skill              # From local directory
+skill install ./my-skill.zip           # From zip
+skill install owner/repo               # From GitHub
+skill install my-skill-slug            # From ClawHub
+
+# Preview a skill before installing
+skill preview owner/repo
 
 # Uninstall a skill
 skill uninstall my-skill
@@ -195,7 +213,7 @@ const allTools = sf.getAllSkillToolDeclarations();
 
 ## Framework Tool Definitions (LLM Function Calling)
 
-The framework exposes 7 tools via `getFrameworkToolDeclarations()` that can be injected directly into an LLM's tools/functions list:
+The framework exposes 10 tools via `getFrameworkToolDeclarations()` that can be injected directly into an LLM's tools/functions list:
 
 ### `skill_list`
 
@@ -320,6 +338,60 @@ Execute a skill tool script. Validates args against the tool's JSON Schema and r
 }
 ```
 
+### `skill_search`
+
+Search for skills across all sources (GitHub and ClawHub). Returns results sorted by popularity.
+
+```json
+{
+  "name": "skill_search",
+  "description": "Search for skills across all sources (GitHub and ClawHub). Returns a list sorted by popularity.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string", "description": "Search query string" }
+    },
+    "required": ["query"]
+  }
+}
+```
+
+### `skill_install_from_network`
+
+Install a skill from the network. Accepts GitHub `owner/repo` or a ClawHub slug. **Sensitive operation, requires confirmation.**
+
+```json
+{
+  "name": "skill_install_from_network",
+  "description": "Install a skill from the network. Accepts GitHub owner/repo (e.g. \"owner/repo\") or a ClawHub slug (e.g. \"my-skill\"). Sensitive operation, requires confirmation.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "source": { "type": "string", "description": "GitHub owner/repo or ClawHub slug" }
+    },
+    "required": ["source"]
+  }
+}
+```
+
+### `skill_preview_from_network`
+
+Preview a skill from the network before installation. Accepts GitHub `owner/repo` or ClawHub slug.
+
+```json
+{
+  "name": "skill_preview_from_network",
+  "description": "Preview a skill from the network before installation. Accepts GitHub owner/repo or ClawHub slug.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "source": { "type": "string", "description": "GitHub owner/repo or ClawHub slug" }
+    },
+    "required": ["source"]
+  }
+}
+```
+
 ### Business Tool Namespacing
 
 Business tools declared in a skill's `manifest.json` are automatically prefixed with `skill.{skillName}.{toolName}` to avoid cross-skill name collisions. Call `getAllSkillToolDeclarations()` to retrieve all business tool definitions at once.
@@ -339,6 +411,9 @@ Business tools declared in a skill's `manifest.json` are automatically prefixed 
 | `previewSkill(source)` | Preview a skill (stage to temp directory) |
 | `installPreviewed(tempDir)` | Install a previously previewed skill |
 | `cancelPreview(tempDir)` | Cancel preview and clean up |
+| `SkillFramework.searchSkills(query)` | Search for skills across GitHub and ClawHub |
+| `installFromNetwork(source)` | Install from GitHub `owner/repo` or ClawHub slug |
+| `previewSkillFromNetwork(source)` | Preview from GitHub `owner/repo` or ClawHub slug |
 | `listTools(name)` | List tools declared by a skill |
 | `runScript(params)` | Execute a skill tool script with JSON Schema validation |
 | `getFrameworkToolDeclarations()` | Get framework-level tool declarations |
