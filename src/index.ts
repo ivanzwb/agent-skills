@@ -281,8 +281,8 @@ export class SkillFramework {
     fs.mkdirSync(downloadDir, { recursive: true });
 
     if (parsed.type === 'clawhub') {
-      const clawHubApi = SkillFinder.getMirror().clawHubApi;
-      const downloadUrl = `${clawHubApi}/download?slug=${encodeURIComponent(parsed.slug)}&tag=latest`;
+      const clawHubApi = SkillFinder.getMirror().clawHubDownloadApi;
+      const downloadUrl = `${clawHubApi}?slug=${encodeURIComponent(parsed.slug)}`;
       const tempZip = path.join(downloadDir, `${parsed.slug}-${Date.now()}.zip`);
       const { downloadFile } = await import('./finder/skill-downloader');
       await downloadFile(downloadUrl, tempZip);
@@ -312,7 +312,33 @@ export class SkillFramework {
     const zipPath = await this.downloadSkillZip(source);
 
     try {
-      const entry = await this.installer.install(zipPath);
+      // For network installs, stage the zip to a temp directory first,
+      // then install from the staged directory so that SKILL.md can
+      // be located even if the archive layout is unconventional.
+      const tempDir = this.installer.stageToTemp(zipPath);
+
+      // Derive a reasonable fallback skill name from the source
+      // (ClawHub slug or GitHub repo name) for SKILL.md files
+      // that omit the frontmatter "name" field.
+      let fallbackName: string | undefined;
+      const parsed = SkillFinder.parseSkillSource(source);
+      if (parsed) {
+        if (parsed.type === 'clawhub') {
+          fallbackName = parsed.slug;
+        } else if (parsed.type === 'github') {
+          const rawRepo = parsed.repo;
+          const normalized = rawRepo
+            .toLowerCase()
+            .replace(/[^a-z0-9-]+/g, '-')
+            .replace(/^-+/, '')
+            .replace(/-+$/, '');
+          if (normalized) {
+            fallbackName = normalized;
+          }
+        }
+      }
+
+      const entry = await this.installer.installFromStaged(tempDir, { fallbackName });
       return entry;
     } finally {
       if (fs.existsSync(zipPath)) {

@@ -267,82 +267,105 @@ export class SkillInstaller {
    * Install a skill from a previously staged temp directory.
    * Renames the temp dir to the final skill name directory.
    */
-  async installFromStaged(tempDir: string): Promise<SkillRegistryEntry> {
+  async installFromStaged(tempDir: string, options?: { fallbackName?: string }): Promise<SkillRegistryEntry> {
     const resolvedTemp = path.resolve(tempDir);
     if (!fs.existsSync(resolvedTemp)) {
       throw new SkillFrameworkError(`Staged directory not found: ${tempDir}`, 'SOURCE_NOT_FOUND');
     }
 
-    const skillMdPath = path.join(resolvedTemp, 'SKILL.md');
+    let skillMdPath = path.join(resolvedTemp, 'SKILL.md');
     let skillMdExists = fs.existsSync(skillMdPath);
 
-    if (!skillMdExists && fs.existsSync(resolvedTemp) && fs.statSync(resolvedTemp).isDirectory()) {
-      const findSkillMd = (dir: string): string | null => {
-        try {
-          for (const entry of fs.readdirSync(dir)) {
-            const fullPath = path.join(dir, entry);
-            if (entry === 'SKILL.md') {
-              return fullPath;
+    try {
+      if (!skillMdExists && fs.existsSync(resolvedTemp) && fs.statSync(resolvedTemp).isDirectory()) {
+        const findSkillMd = (dir: string): string | null => {
+          try {
+            for (const entry of fs.readdirSync(dir)) {
+              const fullPath = path.join(dir, entry);
+              if (entry === 'SKILL.md') {
+                return fullPath;
+              }
+              if (fs.statSync(fullPath).isDirectory()) {
+                const found = findSkillMd(fullPath);
+                if (found) return found;
+              }
             }
-            if (fs.statSync(fullPath).isDirectory()) {
-              const found = findSkillMd(fullPath);
-              if (found) return found;
-            }
+          } catch {
           }
-        } catch {
-        }
-        return null;
-      };
+          return null;
+        };
 
-      const foundPath = findSkillMd(resolvedTemp);
-      if (foundPath) {
-        const foundDir = path.dirname(foundPath);
-        if (foundDir !== resolvedTemp && fs.existsSync(foundDir) && fs.statSync(foundDir).isDirectory()) {
-          const nestedContent = fs.readdirSync(foundDir);
-          for (const item of nestedContent) {
-            fs.renameSync(path.join(foundDir, item), path.join(resolvedTemp, item));
+        const foundPath = findSkillMd(resolvedTemp);
+        if (foundPath) {
+          const foundDir = path.dirname(foundPath);
+          if (foundDir !== resolvedTemp && fs.existsSync(foundDir) && fs.statSync(foundDir).isDirectory()) {
+            const nestedContent = fs.readdirSync(foundDir);
+            for (const item of nestedContent) {
+              fs.renameSync(path.join(foundDir, item), path.join(resolvedTemp, item));
+            }
+            fs.rmSync(foundDir, { recursive: true, force: true });
           }
-          fs.rmSync(foundDir, { recursive: true, force: true });
+          skillMdPath = path.join(resolvedTemp, 'SKILL.md');
+        } else {
+          throw new SkillValidationError(`SKILL.md not found in: ${resolvedTemp}`);
         }
-      } else {
+      } else if (!skillMdExists) {
         throw new SkillValidationError(`SKILL.md not found in: ${resolvedTemp}`);
       }
-    } else if (!skillMdExists) {
-      throw new SkillValidationError(`SKILL.md not found in: ${resolvedTemp}`);
-    }
 
-    const raw = fs.readFileSync(skillMdPath, 'utf-8');
-    const doc = parseSkillMd(raw);
-    const skillName = doc.frontmatter.name;
+      const raw = fs.readFileSync(skillMdPath, 'utf-8');
+      const dirName = path.basename(resolvedTemp);
+      const doc = parseSkillMd(raw, {
+        fallbackName: options?.fallbackName || dirName,
+        warn: (msg) => console.warn(msg),
+      });
+      const skillName = doc.frontmatter.name;
 
-    let finalDir = path.join(this.config.skillsDir, skillName);
-    if (fs.existsSync(finalDir)) {
-      throw new SkillFrameworkError(
-        `Skill directory already exists: ${skillName}. Uninstall first.`,
-        'ALREADY_EXISTS',
-      );
-    }
+      let finalDir = path.join(this.config.skillsDir, skillName);
+      if (fs.existsSync(finalDir)) {
+        throw new SkillFrameworkError(
+          `Skill directory already exists: ${skillName}. Uninstall first.`,
+          'ALREADY_EXISTS',
+        );
+      }
 
-    fs.renameSync(resolvedTemp, finalDir);
+      try {
+        fs.renameSync(resolvedTemp, finalDir);
+      } catch (err) {
+        const nodeErr = err as NodeJS.ErrnoException;
+        if ((nodeErr.code === 'EEXIST' || nodeErr.code === 'EPERM' || nodeErr.code === 'EACCES') && fs.existsSync(finalDir)) {
+          throw new SkillFrameworkError(
+            `Skill directory already exists: ${skillName}. Uninstall first.`,
+            'ALREADY_EXISTS',
+          );
+        }
+        throw err;
+      }
 
-    try {
-      finalDir = ensureNameMatchesDir(skillName, finalDir, this.config.skillsDir);
-      await this.dependencyManager.installAll(finalDir);
-      const tools = parseManifest(finalDir);
+      try {
+        finalDir = ensureNameMatchesDir(skillName, finalDir, this.config.skillsDir);
+        await this.dependencyManager.installAll(finalDir);
+        const tools = parseManifest(finalDir);
 
-      const entry: SkillRegistryEntry = {
-        name: skillName,
-        status: SkillStatus.Installed,
-        rootPath: finalDir,
-        frontmatter: doc.frontmatter,
-        tools,
-        installedAt: new Date().toISOString(),
-      };
+        const entry: SkillRegistryEntry = {
+          name: skillName,
+          status: SkillStatus.Installed,
+          rootPath: finalDir,
+          frontmatter: doc.frontmatter,
+          tools,
+          installedAt: new Date().toISOString(),
+        };
 
-      this.registry.register(entry);
-      return entry;
+        this.registry.register(entry);
+        return entry;
+      } catch (e) {
+        this.cleanupDir(finalDir);
+        throw e;
+      }
     } catch (e) {
-      this.cleanupDir(finalDir);
+      if (fs.existsSync(resolvedTemp)) {
+        this.cleanupDir(resolvedTemp);
+      }
       throw e;
     }
   }
@@ -393,9 +416,10 @@ export class SkillInstaller {
     for (const entry of entries) {
       if (entry.entryName.includes('/SKILL.md')) {
         const parts = entry.entryName.split('/');
+        const topDir = parts[0];
         for (let i = 0; i < parts.length; i++) {
           if (parts[i] === 'SKILL.md' && i > 0) {
-            const skillName = parts[i - 1];
+            const skillName = topDir && topDir !== 'SKILL.md' ? topDir : parts[i - 1];
             targetSkillDir = path.join(this.config.skillsDir, skillName);
             nestedSkillDir = path.join(this.config.skillsDir, ...parts.slice(0, i));
             break;

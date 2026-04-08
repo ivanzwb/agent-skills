@@ -57,17 +57,21 @@ export interface MirrorConfig {
   githubDownload?: string;
   /** ClawHub API base URL (default: https://clawhub.ai/api/v1) */
   clawHubApi?: string;
+  /** ClawHub download base URL (default: https://clawhub.ai/api/v1/download) */
+  clawHubDownloadApi?: string;
 }
 
 const DEFAULT_GITHUB_API = 'https://api.github.com';
 const DEFAULT_GITHUB_DOWNLOAD = 'https://github.com';
 const DEFAULT_CLAWHUB_API = 'https://clawhub.ai/api/v1';
+const DEFAULT_CLAWHUB_DOWNLOAD_API = 'https://wry-manatee-359.convex.site/api/v1/download';
 
 function resolveMirror(config?: MirrorConfig): Required<MirrorConfig> {
   return {
     githubApi: config?.githubApi || process.env.SKILL_GITHUB_API || DEFAULT_GITHUB_API,
     githubDownload: config?.githubDownload || process.env.SKILL_GITHUB_DOWNLOAD || DEFAULT_GITHUB_DOWNLOAD,
     clawHubApi: config?.clawHubApi || process.env.SKILL_CLAWHUB_API || DEFAULT_CLAWHUB_API,
+    clawHubDownloadApi: config?.clawHubDownloadApi || process.env.SKILL_CLAWHUB_DOWNLOAD || DEFAULT_CLAWHUB_DOWNLOAD_API,
   };
 }
 
