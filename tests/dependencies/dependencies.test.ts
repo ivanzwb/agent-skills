@@ -33,10 +33,20 @@ describe('NpmInstaller', () => {
   });
 
   it('runs npm install successfully', async () => {
+    const spy = jest.spyOn(runCommandModule, 'runCommand').mockResolvedValueOnce({
+      success: true,
+      output: 'ok',
+    });
+
     fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"test","version":"1.0.0"}');
+
     const result = await installer.install(tmpDir, 30000);
+
     expect(result.type).toBe('npm');
     expect(result.success).toBe(true);
+    expect(spy).toHaveBeenCalled();
+
+    jest.restoreAllMocks();
   });
 });
 
