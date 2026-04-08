@@ -66,7 +66,8 @@ export class SkillDownloader {
     const githubDownload = SkillFinder.getMirror().githubDownload;
     const downloadUrl = `${githubDownload}/${owner}/${repo}/archive/refs/heads/${branch}.zip`;
 
-    const tempZip = path.join(this.options.destDir, `${repo}-${Date.now()}.zip`);
+    const safeRepo = repo.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const tempZip = path.join(this.options.destDir, `${safeRepo}-${Date.now()}.zip`);
 
     try {
       await downloadFile(downloadUrl, tempZip);

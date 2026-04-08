@@ -2,6 +2,7 @@
 
 const { SkillFramework } = require('../dist/index.js');
 const path = require('path');
+const fs = require('fs');
 
 function getSkillsDir() {
   return process.env.SKILL_HOME || path.join(__dirname, '..', 'skills');
@@ -196,8 +197,17 @@ async function main() {
           process.exit(1);
         }
         let result;
-        if (source.includes('/')) {
-          result = await framework.installFromNetwork(source);
+
+        const resolvedPath = path.resolve(source);
+        const looksLikePath =
+          path.isAbsolute(source) ||
+          source.startsWith('.') ||
+          source.includes(path.sep) ||
+          source.endsWith('.zip');
+
+        if (looksLikePath && fs.existsSync(resolvedPath)) {
+          // Treat as local directory/zip
+          result = await framework.install(resolvedPath);
         } else {
           const localCheck = framework.listSkills().skills.find(s => s.name === source);
           if (localCheck) {
@@ -218,8 +228,16 @@ async function main() {
           process.exit(1);
         }
         let preview;
-        if (source.includes('/')) {
-          preview = await framework.previewSkillFromNetwork(source);
+
+        const resolvedPath = path.resolve(source);
+        const looksLikePath =
+          path.isAbsolute(source) ||
+          source.startsWith('.') ||
+          source.includes(path.sep) ||
+          source.endsWith('.zip');
+
+        if (looksLikePath && fs.existsSync(resolvedPath)) {
+          preview = framework.previewSkill(resolvedPath);
         } else {
           const localCheck = framework.listSkills().skills.find(s => s.name === source);
           if (localCheck) {
