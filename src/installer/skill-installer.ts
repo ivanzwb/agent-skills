@@ -156,7 +156,11 @@ export class SkillInstaller {
       }
 
       const raw = fs.readFileSync(skillMdPath, 'utf-8');
-      const doc = parseSkillMd(raw);
+      const dirName = path.basename(skillRoot);
+      const doc = parseSkillMd(raw, {
+        fallbackName: dirName,
+        warn: (msg) => console.warn(msg),
+      });
 
       skillRoot = ensureNameMatchesDir(doc.frontmatter.name, skillRoot, this.config.skillsDir);
 

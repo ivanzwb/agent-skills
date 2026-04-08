@@ -23,6 +23,8 @@ export function downloadFile(urlString: string, destPath: string): Promise<void>
       }
 
       if (res.statusCode !== 200) {
+        file.destroy();
+        fs.unlink(destPath, () => {});
         reject(new Error(`HTTP ${res.statusCode}`));
         return;
       }
@@ -34,8 +36,17 @@ export function downloadFile(urlString: string, destPath: string): Promise<void>
       });
     });
 
-    req.on('error', reject);
-    file.on('error', reject);
+    req.on('error', (err) => {
+      file.destroy();
+      fs.unlink(destPath, () => {});
+      reject(err);
+    });
+
+    file.on('error', (err) => {
+      file.destroy();
+      fs.unlink(destPath, () => {});
+      reject(err);
+    });
   });
 }
 

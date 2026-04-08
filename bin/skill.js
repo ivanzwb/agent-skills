@@ -7,14 +7,135 @@ function getSkillsDir() {
   return process.env.SKILL_HOME || path.join(__dirname, '..', 'skills');
 }
 
+function parseGlobalOptions(rawArgs) {
+  const options = {
+    proxy: undefined,
+    httpProxy: undefined,
+    httpsProxy: undefined,
+    githubApi: undefined,
+    githubDownload: undefined,
+    clawhubApi: undefined,
+  };
+
+  const args = [];
+
+  for (let i = 0; i < rawArgs.length; i++) {
+    const arg = rawArgs[i];
+
+    if (!arg.startsWith('--')) {
+      args.push(arg);
+      continue;
+    }
+
+    const [name, inlineValue] = arg.split('=', 2);
+    const next = rawArgs[i + 1];
+    const hasNextValue = !inlineValue && next && !next.startsWith('--');
+    const value = inlineValue || (hasNextValue ? next : undefined);
+
+    let handled = false;
+
+    switch (name) {
+      case '--proxy':
+        if (value) {
+          options.proxy = value;
+          handled = true;
+        }
+        break;
+      case '--http-proxy':
+        if (value) {
+          options.httpProxy = value;
+          handled = true;
+        }
+        break;
+      case '--https-proxy':
+        if (value) {
+          options.httpsProxy = value;
+          handled = true;
+        }
+        break;
+      case '--github-api':
+        if (value) {
+          options.githubApi = value;
+          handled = true;
+        }
+        break;
+      case '--github-download':
+        if (value) {
+          options.githubDownload = value;
+          handled = true;
+        }
+        break;
+      case '--clawhub-api':
+        if (value) {
+          options.clawhubApi = value;
+          handled = true;
+        }
+        break;
+      default:
+        break;
+    }
+
+    if (handled && hasNextValue) {
+      i += 1; // skip consumed value
+    }
+
+    if (!handled) {
+      // keep unknown options as positional arguments so subcommands can use them
+      args.push(arg);
+    }
+  }
+
+  return { options, args };
+}
+
+function applyProxyAndMirrorConfig(options) {
+  if (options.proxy) {
+    process.env.HTTP_PROXY = options.proxy;
+    process.env.HTTPS_PROXY = options.proxy;
+    process.env.ALL_PROXY = options.proxy;
+  }
+  if (options.httpProxy) {
+    process.env.HTTP_PROXY = options.httpProxy;
+  }
+  if (options.httpsProxy) {
+    process.env.HTTPS_PROXY = options.httpsProxy;
+  }
+
+  const mirrorConfig = {};
+  if (options.githubApi) {
+    mirrorConfig.githubApi = options.githubApi;
+  }
+  if (options.githubDownload) {
+    mirrorConfig.githubDownload = options.githubDownload;
+  }
+  if (options.clawhubApi) {
+    mirrorConfig.clawHubApi = options.clawhubApi;
+  }
+
+  if (Object.keys(mirrorConfig).length > 0) {
+    SkillFramework.configureMirror(mirrorConfig);
+  }
+}
+
 async function main() {
-  const args = process.argv.slice(2);
+  const rawArgs = process.argv.slice(2);
+  const { options, args } = parseGlobalOptions(rawArgs);
   const command = args[0];
+
+  applyProxyAndMirrorConfig(options);
 
   const framework = new SkillFramework(getSkillsDir());
 
   if (!command) {
     console.log('Usage: skill <command> [options]');
+    console.log('');
+    console.log('Global options (must come before command):');
+    console.log('  --proxy <url>               Set HTTP(S) proxy env for downloads');
+    console.log('  --http-proxy <url>          Set HTTP_PROXY for child processes');
+    console.log('  --https-proxy <url>         Set HTTPS_PROXY for child processes');
+    console.log('  --github-api <url>          Override GitHub API base (SKILL_GITHUB_API)');
+    console.log('  --github-download <url>     Override GitHub download base (SKILL_GITHUB_DOWNLOAD)');
+    console.log('  --clawhub-api <url>         Override ClawHub API base (SKILL_CLAWHUB_API)');
     console.log('');
     console.log('Commands:');
     console.log('  list                      List all installed skills');
@@ -165,6 +286,14 @@ async function main() {
 
       case 'help': {
         console.log('Usage: skill <command> [options]');
+        console.log('');
+        console.log('Global options (must come before command):');
+        console.log('  --proxy <url>               Set HTTP(S) proxy env for downloads');
+        console.log('  --http-proxy <url>          Set HTTP_PROXY for child processes');
+        console.log('  --https-proxy <url>         Set HTTPS_PROXY for child processes');
+        console.log('  --github-api <url>          Override GitHub API base (SKILL_GITHUB_API)');
+        console.log('  --github-download <url>     Override GitHub download base (SKILL_GITHUB_DOWNLOAD)');
+        console.log('  --clawhub-api <url>         Override ClawHub API base (SKILL_CLAWHUB_API)');
         console.log('');
         console.log('Commands:');
         console.log('  list                      List all installed skills');

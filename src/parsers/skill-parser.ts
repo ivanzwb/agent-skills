@@ -12,10 +12,20 @@ const NAME_MAX_LEN = 64;
 const DESCRIPTION_MAX_LEN = 1024;
 const COMPATIBILITY_MAX_LEN = 500;
 
+export interface ParseSkillMdOptions {
+  /**
+   * Optional fallback name to use when frontmatter "name" is missing or empty.
+   * Validation rules (length/character set) still apply to the fallback.
+   */
+  fallbackName?: string;
+  /** Optional warning sink; defaults to console.warn when available. */
+  warn?: (message: string) => void;
+}
+
 /**
  * Parse raw SKILL.md content into a SkillDocument.
  */
-export function parseSkillMd(raw: string): SkillDocument {
+export function parseSkillMd(raw: string, options?: ParseSkillMdOptions): SkillDocument {
   const match = raw.match(FRONTMATTER_REGEX);
   if (!match) {
     throw new SkillValidationError(
@@ -39,7 +49,7 @@ export function parseSkillMd(raw: string): SkillDocument {
   }
 
   const obj = parsed as Record<string, unknown>;
-  const frontmatter = validateFrontmatter(obj);
+  const frontmatter = validateFrontmatter(obj, options);
 
   return { frontmatter, body: body.trim() };
 }
@@ -47,12 +57,25 @@ export function parseSkillMd(raw: string): SkillDocument {
 /**
  * Validate and coerce a parsed YAML object into a SkillFrontmatter.
  */
-function validateFrontmatter(obj: Record<string, unknown>): SkillFrontmatter {
-  // name (required)
+function validateFrontmatter(obj: Record<string, unknown>, options?: ParseSkillMdOptions): SkillFrontmatter {
+  const warn = options?.warn || (typeof console !== 'undefined' && console.warn
+    ? (msg: string) => console.warn(msg)
+    : undefined);
+
+  // name (required, but may fall back to a provided value)
+  let name: string;
   if (typeof obj.name !== 'string' || obj.name.length === 0) {
-    throw new SkillValidationError('frontmatter "name" is required and must be a non-empty string');
+    if (options?.fallbackName) {
+      name = options.fallbackName;
+      if (warn) {
+        warn(`SKILL: frontmatter "name" is missing or empty; using fallback name "${name}"`);
+      }
+    } else {
+      throw new SkillValidationError('frontmatter "name" is required and must be a non-empty string');
+    }
+  } else {
+    name = obj.name;
   }
-  const name = obj.name;
   if (name.length > NAME_MAX_LEN) {
     throw new SkillValidationError(`"name" must be ≤${NAME_MAX_LEN} characters`);
   }
