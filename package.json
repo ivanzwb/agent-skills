@@ -1,6 +1,6 @@
 {
   "name": "@biosbot/agent-skills",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A TypeScript framework for managing AI agent skill packages — install, load, and bind tools for LLM function calling",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
