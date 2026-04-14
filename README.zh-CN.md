@@ -207,11 +207,15 @@ const sf = SkillFramework.init('./skills', {
 // 框架级工具（skill_list, skill_install 等）
 const frameworkTools = sf.getFrameworkToolDeclarations();
 
-// 特定技能声明的业务工具（带 skill.{name}.{tool} 命名空间）
+// 特定技能声明的业务工具（带 skill__{name}__{tool} 命名空间）
 const skillTools = sf.getSkillToolDeclarations('my-skill');
 
 // 所有技能的业务工具
 const allTools = sf.getAllSkillToolDeclarations();
+
+// 解析命名空间业务工具名
+const parsed = sf.parseNamespacedToolName('skill__my-skill__search');
+// -> { skillName: 'my-skill', toolName: 'search' }
 ```
 
 ## 框架工具定义（LLM Function Calling）
@@ -397,7 +401,7 @@ const allTools = sf.getAllSkillToolDeclarations();
 
 ### 业务工具命名空间
 
-技能通过 `manifest.json` 声明的业务工具会被框架自动加上命名空间前缀 `skill.{skillName}.{toolName}`，避免跨技能名称冲突。调用 `getAllSkillToolDeclarations()` 可一次性获取所有技能的业务工具定义。
+技能通过 `manifest.json` 声明的业务工具会被框架自动加上命名空间前缀 `skill__{skillName}__{toolName}`，避免跨技能名称冲突，以及部分模型对点号命名的截断问题。调用 `getAllSkillToolDeclarations()` 可一次性获取所有技能的业务工具定义。
 
 ## API 概览
 
@@ -422,6 +426,7 @@ const allTools = sf.getAllSkillToolDeclarations();
 | `getFrameworkToolDeclarations()` | 获取框架级工具声明 |
 | `getSkillToolDeclarations(name)` | 获取特定技能的命名空间工具声明 |
 | `getAllSkillToolDeclarations()` | 获取所有技能的工具声明 |
+| `parseNamespacedToolName(name)` | 将命名空间工具名解析为 `{ skillName, toolName }` |
 
 ## 技能包结构
 

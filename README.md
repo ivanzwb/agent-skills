@@ -207,11 +207,15 @@ const sf = SkillFramework.init('./skills', {
 // Framework-level tools (skill_list, skill_install, etc.)
 const frameworkTools = sf.getFrameworkToolDeclarations();
 
-// Business tools declared by a specific skill (namespaced as skill.{name}.{tool})
+// Business tools declared by a specific skill (namespaced as skill__{name}__{tool})
 const skillTools = sf.getSkillToolDeclarations('my-skill');
 
 // All business tools across all skills
 const allTools = sf.getAllSkillToolDeclarations();
+
+// Parse namespaced business tool name
+const parsed = sf.parseNamespacedToolName('skill__my-skill__search');
+// -> { skillName: 'my-skill', toolName: 'search' }
 ```
 
 ## Framework Tool Definitions (LLM Function Calling)
@@ -397,7 +401,7 @@ Preview a skill from the network before installation. Accepts GitHub `owner/repo
 
 ### Business Tool Namespacing
 
-Business tools declared in a skill's `manifest.json` are automatically prefixed with `skill.{skillName}.{toolName}` to avoid cross-skill name collisions. Call `getAllSkillToolDeclarations()` to retrieve all business tool definitions at once.
+Business tools declared in a skill's `manifest.json` are automatically prefixed with `skill__{skillName}__{toolName}` to avoid cross-skill name collisions and model truncation on dotted names. Call `getAllSkillToolDeclarations()` to retrieve all business tool definitions at once.
 
 ## API Reference
 
@@ -422,6 +426,7 @@ Business tools declared in a skill's `manifest.json` are automatically prefixed 
 | `getFrameworkToolDeclarations()` | Get framework-level tool declarations |
 | `getSkillToolDeclarations(name)` | Get namespaced tool declarations for a skill |
 | `getAllSkillToolDeclarations()` | Get all skill tool declarations |
+| `parseNamespacedToolName(name)` | Parse namespaced tool name into `{ skillName, toolName }` |
 
 ## Skill Package Structure
 

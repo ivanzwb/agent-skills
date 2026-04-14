@@ -44,6 +44,54 @@ function validateReferencePath(skillRoot: string, referencePath: string): string
  * - skill_list_tools: lists tools declared by a skill
  */
 export class SkillFrameworkTools {
+  private static buildNamespacedToolName(skillName: string, toolName: string): string {
+    // Avoid dot-separated names because some models truncate tool calls at the first segment.
+    return `skill__${skillName}__${toolName}`;
+  }
+
+  /**
+   * Parse a namespaced business tool name and return the original skill/tool names.
+   * Supports both current format `skill__{skillName}__{toolName}` and legacy format
+   * `skill.{skillName}.{toolName}` for backward compatibility.
+   */
+  parseNamespacedToolName(namespacedToolName: string):
+    { skillName: string; toolName: string } | null {
+    const currentPrefix = 'skill__';
+    const legacyPrefix = 'skill.';
+
+    if (namespacedToolName.startsWith(currentPrefix)) {
+      const rest = namespacedToolName.slice(currentPrefix.length);
+      const splitIndex = rest.indexOf('__');
+      if (splitIndex <= 0 || splitIndex === rest.length - 2) {
+        return null;
+      }
+
+      const skillName = rest.slice(0, splitIndex);
+      const toolName = rest.slice(splitIndex + 2);
+      if (!skillName || !toolName) {
+        return null;
+      }
+      return { skillName, toolName };
+    }
+
+    if (namespacedToolName.startsWith(legacyPrefix)) {
+      const rest = namespacedToolName.slice(legacyPrefix.length);
+      const firstDot = rest.indexOf('.');
+      if (firstDot <= 0 || firstDot === rest.length - 1) {
+        return null;
+      }
+
+      const skillName = rest.slice(0, firstDot);
+      const toolName = rest.slice(firstDot + 1);
+      if (!skillName || !toolName) {
+        return null;
+      }
+      return { skillName, toolName };
+    }
+
+    return null;
+  }
+
   constructor(
     private readonly registry: SkillRegistry,
     private readonly installer: SkillInstaller,
@@ -245,7 +293,7 @@ export class SkillFrameworkTools {
     const entry = this.registry.get(skillName);
     return entry.tools.map((tool) => ({
       ...tool,
-      name: `skill.${entry.name}.${tool.name}`,
+      name: SkillFrameworkTools.buildNamespacedToolName(entry.name, tool.name),
     }));
   }
 
@@ -257,7 +305,7 @@ export class SkillFrameworkTools {
       for (const tool of entry.tools) {
         declarations.push({
           ...tool,
-          name: `skill.${entry.name}.${tool.name}`,
+          name: SkillFrameworkTools.buildNamespacedToolName(entry.name, tool.name),
         });
       }
     }

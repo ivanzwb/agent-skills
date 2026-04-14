@@ -1,7 +1,7 @@
 [
   {
     "name": "search",
-    "description": "根据关键词搜索A股股票代码，返回股票代码、名称、市场信息",
+    "description": "根据关键词搜索A股股票代码，返回股票代码、名称、市场信息。当只知道股票名称（如"茅台"、"比亚迪"）而不知道代码时，必须先调用此工具获取代码，再进行后续分析。",
     "parameters": {
       "type": "object",
       "properties": {
@@ -15,7 +15,7 @@
   },
   {
     "name": "kline",
-    "description": "获取股票K线数据和技术指标（MA/MACD/RSI/KDJ等）",
+    "description": "获取股票K线数据和技术指标（MA/MACD/RSI/KDJ等），用于技术面分析。需先用 search 工具获取股票代码（6位数字）。",
     "parameters": {
       "type": "object",
       "properties": {
@@ -40,7 +40,7 @@
   },
   {
     "name": "fundamental",
-    "description": "获取股票基本面数据，包括PE/PB/ROE/市值/财务指标等",
+    "description": "获取股票基本面数据，包括PE/PB/ROE/市值/财务指标等，用于估值分析和基本面研究。需先用 search 工具获取股票代码（6位数字）。",
     "parameters": {
       "type": "object",
       "properties": {
@@ -95,7 +95,7 @@
   },
   {
     "name": "news",
-    "description": "获取指定股票的最新新闻和公告",
+    "description": "获取指定股票的最新新闻和公告，辅助判断近期催化剂或风险事件。需先用 search 工具获取股票代码（6位数字）。",
     "parameters": {
       "type": "object",
       "properties": {

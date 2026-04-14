@@ -218,7 +218,7 @@ describe('SkillFrameworkTools', () => {
 
       const decls = tools.getSkillToolDeclarations('ns-skill');
       expect(decls).toHaveLength(1);
-      expect(decls[0].name).toBe('skill.ns-skill.do-thing');
+      expect(decls[0].name).toBe('skill__ns-skill__do-thing');
     });
   });
 
@@ -238,13 +238,32 @@ describe('SkillFrameworkTools', () => {
       const decls = tools.getAllSkillToolDeclarations();
       expect(decls).toHaveLength(2);
       const names = decls.map((d) => d.name);
-      expect(names).toContain('skill.skill-a.tool-a');
-      expect(names).toContain('skill.skill-b.tool-b');
+      expect(names).toContain('skill__skill-a__tool-a');
+      expect(names).toContain('skill__skill-b__tool-b');
     });
 
     it('returns empty array when no skills installed', () => {
       const decls = tools.getAllSkillToolDeclarations();
       expect(decls).toEqual([]);
+    });
+  });
+
+  describe('parseNamespacedToolName', () => {
+    it('parses current namespaced format', () => {
+      const parsed = tools.parseNamespacedToolName('skill__stock-analysis__search');
+      expect(parsed).toEqual({ skillName: 'stock-analysis', toolName: 'search' });
+    });
+
+    it('parses legacy dotted format for compatibility', () => {
+      const parsed = tools.parseNamespacedToolName('skill.stock-analysis.search');
+      expect(parsed).toEqual({ skillName: 'stock-analysis', toolName: 'search' });
+    });
+
+    it('returns null for invalid namespaced tool name', () => {
+      expect(tools.parseNamespacedToolName('skill')).toBeNull();
+      expect(tools.parseNamespacedToolName('skill__only-skill')).toBeNull();
+      expect(tools.parseNamespacedToolName('skill.only-skill')).toBeNull();
+      expect(tools.parseNamespacedToolName('other__x__y')).toBeNull();
     });
   });
 });

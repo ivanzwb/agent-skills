@@ -245,6 +245,12 @@ export class SkillFramework {
     return this._tools.getAllSkillToolDeclarations();
   }
 
+  /** Parse a namespaced business tool name into { skillName, toolName }. */
+  parseNamespacedToolName(namespacedToolName: string):
+    { skillName: string; toolName: string } | null {
+    return this._tools.parseNamespacedToolName(namespacedToolName);
+  }
+
   // ─── Tool Execution ──────────────────────────────────────────────
 
   /** Execute a skill tool script. */

@@ -262,13 +262,13 @@ describe('SkillFramework', () => {
     it('getSkillToolDeclarations returns namespaced tools', () => {
       const decls = sf.getSkillToolDeclarations(skillName);
       expect(decls).toHaveLength(1);
-      expect(decls[0].name).toBe(`skill.${skillName}.biz-tool`);
+      expect(decls[0].name).toBe(`skill__${skillName}__biz-tool`);
     });
 
     it('getAllSkillToolDeclarations returns all namespaced tools', () => {
       const decls = sf.getAllSkillToolDeclarations();
       expect(decls).toHaveLength(1);
-      expect(decls[0].name).toBe(`skill.${skillName}.biz-tool`);
+      expect(decls[0].name).toBe(`skill__${skillName}__biz-tool`);
     });
   });
 
