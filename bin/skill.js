@@ -126,9 +126,11 @@ async function main() {
   applyProxyAndMirrorConfig(options);
 
   const framework = new SkillFramework(getSkillsDir());
+  const skillsDir = getSkillsDir();
 
   if (!command) {
     console.log('Usage: skill <command> [options]');
+    console.log(`Skills install directory: ${skillsDir}`);
     console.log('');
     console.log('Global options (must come before command):');
     console.log('  --proxy <url>               Set HTTP(S) proxy env for downloads');
@@ -304,6 +306,7 @@ async function main() {
 
       case 'help': {
         console.log('Usage: skill <command> [options]');
+        console.log(`Skills install directory: ${skillsDir}`);
         console.log('');
         console.log('Global options (must come before command):');
         console.log('  --proxy <url>               Set HTTP(S) proxy env for downloads');
