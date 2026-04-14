@@ -111,6 +111,9 @@ After installing the package globally (`npm link` or `npm install -g agent-skill
 # List installed skills
 skill list
 
+# Show detailed content of one installed skill
+skill show my-skill
+
 # Search for skills (GitHub + ClawHub)
 skill find stock-analysis
 

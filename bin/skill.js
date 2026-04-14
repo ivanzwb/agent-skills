@@ -142,6 +142,7 @@ async function main() {
     console.log('');
     console.log('Commands:');
     console.log('  list                      List all installed skills');
+    console.log('  show <name>               Show detailed content of an installed skill');
     console.log('  find <query>              Search for skills from all sources');
     console.log('  install <source>          Install a skill from directory, zip, GitHub, or ClawHub');
     console.log('  preview <source>          Preview a skill before installing');
@@ -163,6 +164,39 @@ async function main() {
             console.log(`  ${skill.name} - ${skill.description}`);
           }
         }
+        break;
+      }
+
+      case 'show': {
+        const name = args[1];
+        if (!name) {
+          console.error('Error: skill name is required');
+          console.error('Usage: skill show <name>');
+          process.exit(1);
+        }
+
+        const main = framework.loadMain(name);
+        const entry = framework.getSkill(name);
+        const declaredTools = framework.listTools(name);
+
+        console.log(`Name: ${main.name}`);
+        console.log(`Description: ${main.description}`);
+        if (main.license) console.log(`License: ${main.license}`);
+        if (main.compatibility) console.log(`Compatibility: ${main.compatibility}`);
+        console.log(`Status: ${entry.status}`);
+        console.log(`Installed At: ${entry.installedAt}`);
+        console.log(`Root Path: ${entry.rootPath}`);
+
+        if (declaredTools.length > 0) {
+          console.log('Tools:');
+          for (const t of declaredTools) {
+            console.log(`  ${t.name} - ${t.description}`);
+          }
+        }
+
+        console.log('');
+        console.log('Content:');
+        console.log(main.body);
         break;
       }
 
@@ -318,6 +352,7 @@ async function main() {
         console.log('');
         console.log('Commands:');
         console.log('  list                      List all installed skills');
+        console.log('  show <name>               Show detailed content of an installed skill');
         console.log('  find <query>              Search for skills from the network (GitHub)');
         console.log('  clawhub <query>           Search for skills from ClawHub registry');
         console.log('  install <source>          Install a skill from directory, zip, GitHub, or ClawHub');

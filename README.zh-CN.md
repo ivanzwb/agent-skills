@@ -111,6 +111,9 @@ await sf.uninstall('my-skill');
 # 列出已安装技能
 skill list
 
+# 查看某个已安装技能的详细内容
+skill show my-skill
+
 # 搜索技能（GitHub + ClawHub）
 skill find stock-analysis
 
