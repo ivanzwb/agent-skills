@@ -4,30 +4,35 @@
  */
 
 export async function getStockNews({ code, limit = 10 }) {
-  const secId = code.startsWith('6') || code.startsWith('9') 
-    ? `1.${code}` 
-    : `0.${code}`;
-  
-  const url = `https://np-anotice-stock.eastmoney.com/api-manager/notice-api/query?page=1&pageSize=${limit}&secids=${secId}&fields=title,publish_time,url`;
-  
-  const response = await fetch(url);
-  const text = await response.text();
-  
-  if (!text || text.trim() === '') {
-    throw new Error('获取股票新闻失败: 返回数据为空');
-  }
-  
-  const data = JSON.parse(text);
+  const pureCode = String(code || '').replace(/^(sh|sz|SH|SZ)/, '');
+  const pageSize = Number.isFinite(limit) ? Math.max(1, Math.min(50, limit)) : 10;
+  const url = `https://np-anotice-stock.eastmoney.com/api/security/ann?sr=-1&page_size=${pageSize}&page_index=1&ann_type=A&stock_list=${pureCode}`;
 
-  if (!data.data || !data.data.list) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`获取股票新闻失败: HTTP ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const list = data?.data?.list;
+  if (!Array.isArray(list)) {
     throw new Error('获取股票新闻失败: 无数据');
   }
 
-  return data.data.list.map(item => ({
-    title: item.title || '',
-    publishTime: item.publish_time || '',
-    url: item.url || '',
-  }));
+  return list.map((item) => {
+    const title = item.title_ch || item.title || '';
+    const publishTime = item.display_time || item.notice_date || '';
+    const artCode = item.art_code || '';
+    const detailUrl = artCode
+      ? `https://data.eastmoney.com/notices/detail/${pureCode}/${artCode}.html`
+      : '';
+    return {
+      title,
+      publishTime,
+      url: detailUrl,
+      artCode,
+    };
+  });
 }
 
 export default { getStockNews };
