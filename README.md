@@ -144,6 +144,15 @@ skill help
 SKILL_HOME=~/.skills skill list
 ```
 
+**Project-level configuration:**
+- Set a project-specific skills directory (saved to `.skillrc` in current working directory):
+
+```bash
+skill --set-skills-dir ./my-skills
+```
+
+After setting, subsequent `skill` commands in the same project will automatically use `./my-skills`. The config is stored in `.skillrc` in the project root.
+
 ### Script Execution (runScript)
 
 Execute skill tool scripts programmatically with JSON Schema validation:

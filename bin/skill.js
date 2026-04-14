@@ -4,8 +4,44 @@ const { SkillFramework } = require('../dist/index.js');
 const path = require('path');
 const fs = require('fs');
 
+const CONFIG_FILE = '.skillrc';
+
 function getSkillsDir() {
-  return process.env.SKILL_HOME || path.join(__dirname, '..', 'skills');
+  // Priority: 1. SKILL_HOME env, 2. config file, 3. default
+  return process.env.SKILL_HOME || getConfigValue('skillsDir') || path.join(__dirname, '..', 'skills');
+}
+
+function getConfigValue(key) {
+  // Local config file in current working directory
+  const cwd = process.cwd();
+  const localConfig = path.join(cwd, CONFIG_FILE);
+  
+  if (fs.existsSync(localConfig)) {
+    try {
+      const content = fs.readFileSync(localConfig, 'utf-8');
+      const config = JSON.parse(content);
+      if (config[key]) return config[key];
+    } catch {}
+  }
+  return undefined;
+}
+
+function setConfigValue(key, value) {
+  const cwd = process.cwd();
+  const localConfig = path.join(cwd, CONFIG_FILE);
+  const config = {};
+  
+  // Load existing local config
+  if (fs.existsSync(localConfig)) {
+    try {
+      const content = fs.readFileSync(localConfig, 'utf-8');
+      Object.assign(config, JSON.parse(content));
+    } catch {}
+  }
+  
+  config[key] = value;
+  fs.writeFileSync(localConfig, JSON.stringify(config, null, 2));
+  console.log(`Saved to: ${localConfig}`);
 }
 
 function parseGlobalOptions(rawArgs) {
@@ -72,6 +108,15 @@ function parseGlobalOptions(rawArgs) {
           handled = true;
         }
         break;
+      case '--set-skills-dir':
+        // Special flag to persist skillsDir to config
+        if (value) {
+          const resolvedPath = path.resolve(value);
+          setConfigValue('skillsDir', resolvedPath);
+          console.log(`Skills directory set to: ${resolvedPath}`);
+          process.exit(0);
+        }
+        break;
       default:
         break;
     }
@@ -125,8 +170,8 @@ async function main() {
 
   applyProxyAndMirrorConfig(options);
 
-  const framework = new SkillFramework(getSkillsDir());
   const skillsDir = getSkillsDir();
+  const framework = new SkillFramework(skillsDir);
 
   if (!command) {
     console.log('Usage: skill <command> [options]');
@@ -139,6 +184,7 @@ async function main() {
     console.log('  --github-api <url>          Override GitHub API base (SKILL_GITHUB_API)');
     console.log('  --github-download <url>     Override GitHub download base (SKILL_GITHUB_DOWNLOAD)');
     console.log('  --clawhub-api <url>         Override ClawHub API base (SKILL_CLAWHUB_API)');
+    console.log('  --set-skills-dir <path>    Persist skills directory (project-wide)');
     console.log('');
     console.log('Commands:');
     console.log('  list                      List all installed skills');
@@ -349,6 +395,7 @@ async function main() {
         console.log('  --github-api <url>          Override GitHub API base (SKILL_GITHUB_API)');
         console.log('  --github-download <url>     Override GitHub download base (SKILL_GITHUB_DOWNLOAD)');
         console.log('  --clawhub-api <url>         Override ClawHub API base (SKILL_CLAWHUB_API)');
+        console.log('  --set-skills-dir <path>    Persist skills directory (project-wide)');
         console.log('');
         console.log('Commands:');
         console.log('  list                      List all installed skills');

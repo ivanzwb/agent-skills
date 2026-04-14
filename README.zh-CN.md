@@ -144,6 +144,15 @@ skill help
 SKILL_HOME=~/.skills skill list
 ```
 
+**项目级配置：**
+- 设置项目专属的技能存储目录（保存到当前工作目录的 `.skillrc`）：
+
+```bash
+skill --set-skills-dir ./my-skills
+```
+
+设置后，同一项目中的后续 `skill` 命令会自动使用 `./my-skills`。配置保存在项目根目录的 `.skillrc` 文件中。
+
 ### 脚本执行（runScript）
 
 通过 JSON Schema 验证执行技能工具脚本：
