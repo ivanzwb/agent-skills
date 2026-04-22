@@ -32,19 +32,21 @@ license: MIT
 
 当用户给出股票名称（如"茅台"、"比亚迪"）而非6位代码时，**必须先用 `search` 工具查找代码**，再进行后续分析。**不要**以"不知道股票代码"为由拒绝分析。
 
+其它 Agent 集成此技能时，可直接执行技能包 `scripts/` 目录下对应工具脚本，参数使用 JSON 字符串传入，例如：`node scripts/search.js '{"keyword":"茅台"}'`
+
 ### 完整分析工作流
 
 **第一步：获取股票代码（仅名称未知时）**
 ```
-skill run stock-analysis search '{"keyword":"茅台"}'
-# → 得到 code: "600519"
+node scripts/search.js '{"keyword":"茅台"}'
+# -> 得到 code: "600519"
 ```
 
 **第二步：并行获取多维度数据**
 ```
-skill run stock-analysis fundamental '{"code":"600519"}'
-skill run stock-analysis kline '{"code":"600519","period":"daily","limit":60}'
-skill run stock-analysis news '{"code":"600519","limit":5}'
+node scripts/fundamental.js '{"code":"600519"}'
+node scripts/kline.js '{"code":"600519","period":"daily","limit":60}'
+node scripts/news.js '{"code":"600519","limit":5}'
 ```
 
 **第三步：综合分析**
@@ -54,15 +56,15 @@ skill run stock-analysis news '{"code":"600519","limit":5}'
 
 ```
 # 搜索股票（输入名称或代码均可）
-skill run stock-analysis search '{"keyword":"茅台"}'
-skill run stock-analysis search '{"keyword":"600519"}'
+node scripts/search.js '{"keyword":"茅台"}'
+node scripts/search.js '{"keyword":"600519"}'
 
 # 获取K线数据
-skill run stock-analysis kline '{"code":"600519","period":"daily"}'
+node scripts/kline.js '{"code":"600519","period":"daily"}'
 
 # 获取基本面数据
-skill run stock-analysis fundamental '{"code":"600519"}'
+node scripts/fundamental.js '{"code":"600519"}'
 
 # 获取最新新闻
-skill run stock-analysis news '{"code":"600519"}'
+node scripts/news.js '{"code":"600519"}'
 ```
